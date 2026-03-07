@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { fetchRecentItems } from '../lib/api'
 import type { ItemSummary } from '../lib/types'
 
@@ -24,6 +25,7 @@ export function DashboardPage() {
             <h3>{item.displayName}</h3>
             <p>Quality: {item.quality}</p>
             <p>Captured: {new Date(item.capturedAt).toLocaleString()}</p>
+            <Link to={`/item/${item.id}`}>View Detail</Link>
           </article>
         ))}
       </div>

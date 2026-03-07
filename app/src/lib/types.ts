@@ -8,6 +8,22 @@ export interface ItemSummary {
   capturedAt: string
 }
 
+export interface TodayStats {
+  totalItems: number
+  uniqueItems: number
+  runes: number
+  materials: number
+}
+
+export interface AppSettings {
+  overlay_item_limit: number
+  overlay_position: 'right' | 'left' | 'bottom'
+  overlay_opacity: number
+  theme: 'light' | 'dark'
+  qr_public_enabled: boolean
+  qr_token: string
+}
+
 export interface ItemStat {
   statName: string
   statValue: number
@@ -20,5 +36,6 @@ export interface ItemDetail extends ItemSummary {
   type: string
   iLevel: number
   location: string
+  defense: number | null
   stats: ItemStat[]
 }

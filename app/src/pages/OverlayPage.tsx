@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import { fetchRecentItems } from '../lib/api'
+import { fetchOverlayItems } from '../lib/api'
 import type { ItemSummary } from '../lib/types'
 
 export function OverlayPage() {
   const [items, setItems] = useState<ItemSummary[]>([])
 
   useEffect(() => {
-    fetchRecentItems()
-      .then((res) => setItems(res.slice(0, 5)))
+    fetchOverlayItems()
+      .then((res) => setItems(res))
       .catch(() => setItems([]))
   }, [])
 

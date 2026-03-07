@@ -98,8 +98,10 @@ docs/ui/22-today-page-ui.md
 
 - overlay 표시 개수\
 - overlay 위치\
+- overlay 투명도\
 - theme\
-- QR 공개 설정
+- QR 공개 설정\
+- QR 토큰
 
 참고\
 docs/operations/61-config-and-settings.md
@@ -169,6 +171,39 @@ GET /api/stats/today\
   "materials": 12\
 }
 
+---
+
+# Health API
+
+GET /api/health\
+서버 상태 확인
+
+---
+
+# Events API
+
+GET /api/events/items\
+SSE 기반 item-captured 이벤트 스트림
+
+---
+
+# Ingest API
+
+POST /api/ingest\
+JSON payload를 수동 저장
+
+---
+
+# Settings API
+
+설정 데이터 제공/갱신.
+
+GET /api/settings\
+현재 설정 조회
+
+PUT /api/settings\
+설정 값 업데이트
+
 * * * * *
 
 Route 설계 원칙
@@ -200,7 +235,11 @@ Route 설계 원칙
  /api/items/today\
  /api/items/:id\
  /api/overlay\
- /api/stats/today
+ /api/stats/today\
+ /api/settings\
+ /api/health\
+ /api/events/items\
+ /api/ingest
 
 * * * * *
 

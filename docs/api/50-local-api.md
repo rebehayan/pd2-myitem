@@ -2,189 +2,137 @@
 
 로컬 앱 내부에서 사용하는 API 명세.
 
-이 API는 다음 목적을 위해 존재한다.
+## 목적
 
-- UI 데이터 제공\
-- OBS overlay 데이터 제공\
-- 아이템 상세 조회\
+- UI 데이터 제공
+- OBS overlay 데이터 제공
+- 아이템 상세 조회
 - 통계 제공
+- 설정 조회/저장
 
----
+## Base URL
 
-# Base URL
+`http://127.0.0.1:{PORT}/api`
 
-````text\
-http://127.0.0.1:{PORT}/api
+예: `http://127.0.0.1:4173/api`
 
-PORT는 앱 시작 시 설정된다.
+## API 목록
 
-예
+### 최근 아이템
 
-http://127.0.0.1:4173/api
+`GET /api/items/recent`
 
-* * * * *
+응답 예시:
 
-API 목록
-======
-
-최근 아이템
-------
-
-GET /api/items/recent
-
-### 설명
-
-최근 획득 아이템 반환
-
-### 응답 예시
-
-[\
-  {\
-    "id": "uuid",\
-    "display_name": "Goblin Toe",\
-    "quality": "Unique",\
-    "quantity": null,\
-    "is_corrupted": true,\
-    "thumbnail": "/icons/boots/light_plated_boots.png",\
-    "captured_at": "2025-01-01T12:00:00"\
-  }\
+```json
+[
+  {
+    "id": "uuid",
+    "display_name": "Goblin Toe",
+    "quality": "Unique",
+    "quantity": null,
+    "is_corrupted": true,
+    "thumbnail": "/icons/boots/light_plated_boots.png",
+    "captured_at": "2025-01-01T12:00:00"
+  }
 ]
+```
 
-* * * * *
+### 오늘 아이템
 
-오늘 아이템
-------
+`GET /api/items/today`
 
-GET /api/items/today
+### 아이템 상세
 
-### 설명
+`GET /api/items/:id`
 
-오늘 획득 아이템 전체 목록
+### Overlay 데이터
 
-* * * * *
+`GET /api/overlay`
 
-아이템 상세
-------
+OBS overlay 전용 데이터. 최근 N개 아이템 반환.
 
-GET /api/items/:id
+### 오늘 통계
 
-### 설명
+`GET /api/stats/today`
 
-특정 아이템 상세
+응답 예시:
 
-* * * * *
-
-overlay 데이터
------------
-
-GET /api/overlay
-
-### 설명
-
-OBS overlay 전용 데이터
-
-최근 N개 아이템만 반환
-
-* * * * *
-
-오늘 통계
------
-
-GET /api/stats/today
-
-### 응답
-
-{\
-  "total_items": 42,\
-  "unique_items": 3,\
-  "runes": 5,\
-  "materials": 12\
+```json
+{
+  "total_items": 42,
+  "unique_items": 3,
+  "runes": 5,
+  "materials": 12
 }
+```
 
-* * * * *
+### 설정 조회/저장
 
-API 정책
-======
+`GET /api/settings`
 
--   모든 API는 로컬 전용
+현재 앱 설정 반환.
 
--   인증 없음
+`PUT /api/settings`
 
--   외부 접근 차단 권장\
----
+설정 값 업데이트.
 
-# 2️⃣ `docs/api/51-route-structure.md`
+요청/응답 키 예시:
 
-```md\
-# Route Structure
+```json
+{
+  "overlay_item_limit": 10,
+  "overlay_position": "right",
+  "overlay_opacity": 0.8,
+  "theme": "light",
+  "qr_public_enabled": true,
+  "qr_token": "8fa3d92c41c0eab52e0a1f7f1d8d1c31"
+}
+```
 
-웹 UI 라우팅 구조 정의.
+### 헬스체크
 
----
+`GET /api/health`
 
-# 페이지 목록
+서버 상태 확인용 경량 엔드포인트.
 
-| route | 설명 |\
-|------|------|\
-| / | dashboard |\
-| /overlay | 방송 오버레이 |\
-| /today | 오늘 아이템 목록 |\
-| /item/:id | 아이템 상세 |\
-| /settings | 설정 |
+응답 예시:
 
----
+```json
+{
+  "ok": true
+}
+```
 
-# /
+### 수집 이벤트 스트림
 
-## Dashboard
+`GET /api/events/items`
 
-최근 아이템 목록\
-아이템 검색\
-아이템 공유
+SSE(Server-Sent Events)로 `item-captured` 이벤트를 스트리밍한다.
 
-참고\
-`docs/ui/21-dashboard-ui.md`
+이벤트 예시:
 
----
+```text
+event: item-captured
+data: {"itemId":"uuid","displayName":"Goblin Toe","capturedAt":"2026-03-07T07:00:00.000Z"}
+```
 
-# /overlay
+### 수동 Ingest
 
-OBS Browser Source 전용 페이지
+`POST /api/ingest`
 
-참고\
-`docs/ui/20-overlay-ui.md`
+클립보드 파이프라인과 동일한 저장 로직을 API로 호출한다.
 
----
+요청 예시:
 
-# /today
+```json
+{
+  "payload": "{\"type\":\"Ring\",\"quality\":\"Magic\"}"
+}
+```
 
-오늘 획득 아이템 공개 페이지
+## API 정책
 
-참고\
-`docs/ui/22-today-page-ui.md`
-
----
-
-# /item/:id
-
-아이템 상세 페이지
-
-표시 내용
-
-- 아이템 이름\
-- 썸네일\
-- stats\
-- 공유 버튼
-
----
-
-# /settings
-
-설정 페이지
-
-가능 설정
-
-- overlay 표시 개수\
-- 품질 색상\
-- 세션 이름
-````
+- 모든 API는 로컬 전용
+- 인증 없음
+- 외부 접근 차단 권장

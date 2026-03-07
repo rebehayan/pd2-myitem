@@ -1,7 +1,9 @@
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import './App.css'
 import { DashboardPage } from './pages/DashboardPage'
+import { ItemDetailPage } from './pages/ItemDetailPage'
 import { OverlayPage } from './pages/OverlayPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 
 function App() {
@@ -13,17 +15,20 @@ function App() {
       </header>
 
       <nav className="shell__nav" aria-label="Main navigation">
-        <NavLink to="/dashboard">Dashboard</NavLink>
+        <NavLink to="/">Dashboard</NavLink>
         <NavLink to="/overlay">Overlay</NavLink>
         <NavLink to="/today">Today</NavLink>
+        <NavLink to="/settings">Settings</NavLink>
       </nav>
 
       <main className="shell__main">
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/overlay" element={<OverlayPage />} />
           <Route path="/today" element={<TodayPage />} />
+          <Route path="/item/:id" element={<ItemDetailPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>
     </div>

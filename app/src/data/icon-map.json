@@ -1,0 +1,11 @@
+{
+  "light_plated_boots": "boots/light_plated_boots.png",
+  "worldstone_shard": "material/worldstone_shard.png",
+  "ohm_rune": "rune/ohm_rune.png",
+  "ring": "jewelry/ring.png",
+  "amulet": "jewelry/amulet.png",
+  "jewel": "jewel/jewel.png",
+  "small_charm": "charm/small_charm.png",
+  "large_charm": "charm/large_charm.png",
+  "grand_charm": "charm/grand_charm.png"
+}

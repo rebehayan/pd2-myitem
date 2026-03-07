@@ -1,0 +1,19 @@
+{
+  "boots": "generic/boots.png",
+  "weapon": "generic/weapon.png",
+  "armor": "generic/armor.png",
+  "helm": "generic/helm.png",
+  "shield": "generic/shield.png",
+  "gloves": "generic/gloves.png",
+  "belt": "generic/belt.png",
+  "jewelry": "generic/jewelry.png",
+  "charm": "generic/charm.png",
+  "material": "generic/material.png",
+  "rune": "generic/rune.png",
+  "gem": "generic/gem.png",
+  "jewel": "generic/jewel.png",
+  "map": "generic/map.png",
+  "consumable": "generic/consumable.png",
+  "quest": "generic/quest.png",
+  "misc": "generic/misc.png"
+}
