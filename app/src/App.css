@@ -1,0 +1,68 @@
+.shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2rem 1.2rem 3rem;
+}
+
+.shell__header h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+}
+
+.shell__header p {
+  margin-top: 0.6rem;
+  color: #4b5563;
+}
+
+.shell__nav {
+  margin-top: 1.25rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.shell__nav a {
+  color: #1f2937;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.shell__nav a.active {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #ffffff;
+}
+
+.shell__main {
+  margin-top: 1.3rem;
+}
+
+.panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 1rem;
+}
+
+.panel + .panel {
+  margin-top: 0.9rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.85rem;
+}
+
+.item-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.item-card p {
+  margin: 0.2rem 0;
+  color: #475569;
+}

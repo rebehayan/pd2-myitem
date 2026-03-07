@@ -1,0 +1,21 @@
+[package]
+name = "pd2_broadcast_item_tracker"
+version = "0.1.0"
+description = "PD2 Broadcast Item Tracker desktop shell"
+authors = ["pd2-team"]
+license = "MIT"
+edition = "2021"
+
+[lib]
+name = "pd2_broadcast_item_tracker_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
