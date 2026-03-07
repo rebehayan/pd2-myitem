@@ -1,4 +1,4 @@
-import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
+import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
 import { DashboardPage } from './pages/DashboardPage'
 import { ItemDetailPage } from './pages/ItemDetailPage'
@@ -7,6 +7,18 @@ import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 
 function App() {
+  const location = useLocation()
+  const isOverlayRoute = location.pathname === '/overlay' || location.pathname === '/overlay/'
+  const isTodayRoute = location.pathname === '/today' || location.pathname === '/today/'
+
+  if (isOverlayRoute) {
+    return <OverlayPage />
+  }
+
+  if (isTodayRoute) {
+    return <TodayPage />
+  }
+
   return (
     <div className="shell">
       <header className="shell__header">

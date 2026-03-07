@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-type MatchedBy = 'type' | 'category' | 'generic'
+type MatchedBy = 'unique' | 'type' | 'category' | 'generic'
 type QualityFrame = 'normal' | 'magic' | 'rare' | 'set' | 'unique'
 
 const shouldLogIconMiss = process.env.ENABLE_ICON_MISS_LOG !== 'false'
@@ -39,6 +39,13 @@ const defaultCategoryMap: Record<string, string> = {
 
 let cachedTypeMap: Record<string, string> | null = null
 let cachedCategoryMap: Record<string, string> | null = null
+let cachedUniqueMap: Record<string, string> | null = null
+
+const defaultUniqueMap: Record<string, string> = {
+  goblin_toe: 'goblin_toe.png',
+  harlequin_crest: 'harlequin_crest.png',
+  stormshield: 'stormshield.png',
+}
 
 function normalizePathMap(raw: unknown): Record<string, string> {
   if (!raw || typeof raw !== 'object') {
@@ -60,6 +67,25 @@ function normalizeExactTypeMap(raw: unknown): Record<string, string> {
 function normalizeCategoryMap(raw: unknown): Record<string, string> {
   const normalized = normalizePathMap(raw)
   const entries = Object.entries(normalized).map(([key, value]) => [key.trim().toLowerCase(), value] as const)
+  return Object.fromEntries(entries)
+}
+
+function normalizeUniqueNameKey(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9\s]/g, ' ')
+    .replaceAll(/\s+/g, '_')
+    .replaceAll(/_+/g, '_')
+    .replaceAll(/^_+|_+$/g, '')
+}
+
+function normalizeUniqueMap(raw: unknown): Record<string, string> {
+  const normalized = normalizePathMap(raw)
+  const entries = Object.entries(normalized).map(([key, value]) => {
+    const normalizedKey = normalizeUniqueNameKey(key)
+    return [normalizedKey, value] as const
+  })
   return Object.fromEntries(entries)
 }
 
@@ -96,6 +122,14 @@ function getCategoryFallbackMap(): Record<string, string> {
   }
   cachedCategoryMap = normalizeCategoryMap(readMapFromJson('category-icon-map.json') ?? defaultCategoryMap)
   return cachedCategoryMap
+}
+
+function getUniqueImageMap(): Record<string, string> {
+  if (cachedUniqueMap) {
+    return cachedUniqueMap
+  }
+  cachedUniqueMap = normalizeUniqueMap(readMapFromJson('unique-image-map.json') ?? defaultUniqueMap)
+  return cachedUniqueMap
 }
 
 const categoryKeywordRules: Array<{ category: string; keywords: string[] }> = [
@@ -168,12 +202,36 @@ export interface ThumbnailResolveResult {
 
 export function resolveThumbnail(args: {
   baseType: string
+  itemName: string | null
   quality: string
   quantity: number | null
   isCorrupted: boolean
 }): ThumbnailResolveResult {
   const normalizedType = normalizeTypeKey(args.baseType)
   const category = inferCategory(args.baseType)
+  const qualityFrame = toQualityFrame(args.quality)
+  const normalizedUniqueName = args.itemName ? normalizeUniqueNameKey(args.itemName) : ''
+
+  if (qualityFrame === 'unique' && normalizedUniqueName) {
+    const uniqueImage = getUniqueImageMap()[normalizedUniqueName]
+    if (uniqueImage) {
+      return {
+        iconPath: uniqueImage,
+        iconKey: normalizedType,
+        category,
+        matchedBy: 'unique',
+        qualityFrame,
+        badges: {
+          corrupted: args.isCorrupted,
+          quantity: args.quantity !== null,
+        },
+      }
+    }
+    if (shouldLogIconMiss) {
+      console.log(`[unique-image-miss] name="${args.itemName}"`)
+    }
+  }
+
   const exact = getExactTypeMap()[normalizedType]
 
   if (exact) {
@@ -182,7 +240,7 @@ export function resolveThumbnail(args: {
       iconKey: normalizedType,
       category,
       matchedBy: 'type',
-      qualityFrame: toQualityFrame(args.quality),
+      qualityFrame,
       badges: {
         corrupted: args.isCorrupted,
         quantity: args.quantity !== null,
@@ -200,7 +258,7 @@ export function resolveThumbnail(args: {
       iconKey: normalizedType,
       category,
       matchedBy: 'category',
-      qualityFrame: toQualityFrame(args.quality),
+      qualityFrame,
       badges: {
         corrupted: args.isCorrupted,
         quantity: args.quantity !== null,
@@ -216,7 +274,7 @@ export function resolveThumbnail(args: {
     iconKey: normalizedType,
     category,
     matchedBy: 'generic',
-    qualityFrame: toQualityFrame(args.quality),
+    qualityFrame,
     badges: {
       corrupted: args.isCorrupted,
       quantity: args.quantity !== null,

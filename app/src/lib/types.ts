@@ -1,5 +1,6 @@
 export interface ItemSummary {
   id: string
+  type: string
   displayName: string
   quality: string
   quantity: number | null
@@ -13,6 +14,22 @@ export interface TodayStats {
   uniqueItems: number
   runes: number
   materials: number
+}
+
+export interface TodayPublicItem {
+  displayName: string
+  quality: string
+  quantity: number | null
+  isCorrupted: boolean
+  thumbnail: string | null
+  capturedAt: string
+  category?: string
+}
+
+export interface TodayPublicPayload {
+  date: string
+  stats: TodayStats
+  items: TodayPublicItem[]
 }
 
 export interface AppSettings {

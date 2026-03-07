@@ -60,6 +60,7 @@ function normalizeItem(item: RawClipboardItem, rawJson: string, parsedSource: un
   const quantity = item.quantity ?? null
   const thumbnail = resolveThumbnail({
     baseType: item.type,
+    itemName: item.name ?? null,
     quality: item.quality,
     quantity,
     isCorrupted: corrupted,

@@ -110,6 +110,7 @@ export function saveParsedItem(item: ParsedItem): SaveParsedItemResult {
 
 interface ItemSummaryRow {
   id: string
+  name: string | null
   base_type: string
   display_name: string
   quality: string
@@ -136,6 +137,7 @@ function parseAnalysisTags(rawTags: string): string[] {
 function mapSummaryRow(row: ItemSummaryRow) {
   const thumbnail = resolveThumbnail({
     baseType: row.base_type,
+    itemName: row.name,
     quality: row.quality,
     quantity: row.quantity,
     isCorrupted: Boolean(row.is_corrupted),
@@ -143,6 +145,8 @@ function mapSummaryRow(row: ItemSummaryRow) {
 
   return {
     id: row.id,
+    type: row.base_type,
+    category: row.category,
     displayName: row.display_name,
     quality: row.quality,
     quantity: row.quantity,
@@ -157,7 +161,7 @@ function mapSummaryRow(row: ItemSummaryRow) {
 export function getRecentItems(limit = 20) {
   const rows = db
     .prepare<{ limit: number }, ItemSummaryRow>(
-      `SELECT id, base_type, display_name, quality, quantity, is_corrupted, category, analysis_profile, analysis_tags, captured_at
+      `SELECT id, name, base_type, display_name, quality, quantity, is_corrupted, category, analysis_profile, analysis_tags, captured_at
        FROM items
        ORDER BY captured_at DESC
        LIMIT @limit`,
@@ -172,7 +176,7 @@ export function getTodayItems() {
   dayStart.setHours(0, 0, 0, 0)
   const rows = db
     .prepare<{ day_start: string }, ItemSummaryRow>(
-      `SELECT id, base_type, display_name, quality, quantity, is_corrupted, category, analysis_profile, analysis_tags, captured_at
+      `SELECT id, name, base_type, display_name, quality, quantity, is_corrupted, category, analysis_profile, analysis_tags, captured_at
        FROM items
        WHERE captured_at >= @day_start
        ORDER BY captured_at DESC`,
@@ -266,6 +270,7 @@ export function getItemById(id: string) {
 
   const thumbnail = resolveThumbnail({
     baseType: row.base_type,
+    itemName: row.name,
     quality: row.quality,
     quantity: row.quantity,
     isCorrupted: Boolean(row.is_corrupted),
@@ -295,4 +300,26 @@ export function getItemById(id: string) {
       isCorrupted: Boolean(stat.corrupted),
     })),
   }
+}
+
+export function deleteItemById(id: string): boolean {
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM item_stats WHERE item_id = @item_id').run({ item_id: id })
+    const result = db.prepare('DELETE FROM items WHERE id = @id').run({ id })
+    return result.changes > 0
+  })
+
+  return tx()
+}
+
+export function clearAllItems(): { deletedItems: number } {
+  const tx = db.transaction(() => {
+    const itemCountRow = db.prepare<[], { count: number }>('SELECT COUNT(*) AS count FROM items').get()
+    db.prepare('DELETE FROM item_stats').run()
+    db.prepare('DELETE FROM items').run()
+    db.prepare('DELETE FROM sessions').run()
+    return { deletedItems: itemCountRow?.count ?? 0 }
+  })
+
+  return tx()
 }

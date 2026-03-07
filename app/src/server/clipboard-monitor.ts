@@ -5,11 +5,16 @@ import { captureClipboardPayload } from './capture-service'
 const execFileAsync = promisify(execFile)
 const pollIntervalMs = 500
 const processProbeCacheMs = 2000
-const processTargets = ['pd2', 'diablo2']
+const processGroups: string[][] = [
+  ['pd2', 'projectdiablo2', 'projectd2'],
+  ['diablo2', 'projectdiablo2'],
+]
 const isDev = process.env.NODE_ENV !== 'production'
+const processGateEnabled = process.env.CLIPBOARD_PROCESS_GATE !== 'false'
 
 let lastProcessCheckAt = 0
 let lastProcessCheckResult = false
+let lastProcessGateBlockedLogAt = 0
 
 interface ProcessRow {
   imageName: string
@@ -28,6 +33,10 @@ function parseTasklistCsv(csvText: string): ProcessRow[] {
 }
 
 async function checkRequiredGameProcessesRunning(): Promise<boolean> {
+  if (!processGateEnabled) {
+    return true
+  }
+
   const now = Date.now()
   if (now - lastProcessCheckAt < processProbeCacheMs) {
     return lastProcessCheckResult
@@ -38,7 +47,9 @@ async function checkRequiredGameProcessesRunning(): Promise<boolean> {
     if (process.platform === 'win32') {
       const { stdout } = await execFileAsync('tasklist', ['/fo', 'csv', '/nh'])
       const processNames = parseTasklistCsv(stdout).map((row) => row.imageName.toLowerCase())
-      lastProcessCheckResult = processTargets.every((target) => processNames.some((name) => name.includes(target)))
+      lastProcessCheckResult = processGroups.every((group) =>
+        group.some((target) => processNames.some((name) => name.includes(target))),
+      )
       return lastProcessCheckResult
     }
 
@@ -47,7 +58,9 @@ async function checkRequiredGameProcessesRunning(): Promise<boolean> {
       .split(/\r?\n/)
       .map((line) => line.trim().toLowerCase())
       .filter((line) => line.length > 0)
-    lastProcessCheckResult = processTargets.every((target) => processNames.some((name) => name.includes(target)))
+    lastProcessCheckResult = processGroups.every((group) =>
+      group.some((target) => processNames.some((name) => name.includes(target))),
+    )
     return lastProcessCheckResult
   } catch (error) {
     if (isDev) {
@@ -74,6 +87,22 @@ function isPd2ItemCandidate(parsed: unknown): parsed is { type: string } {
   return typeof maybeItem.type === 'string' && maybeItem.type.trim().length > 0
 }
 
+function isStrongPd2ItemCandidate(parsed: unknown): parsed is { type: string; quality: string; location: string } {
+  if (!parsed || typeof parsed !== 'object') {
+    return false
+  }
+
+  const maybeItem = parsed as { type?: unknown; quality?: unknown; location?: unknown }
+  return (
+    typeof maybeItem.type === 'string' &&
+    maybeItem.type.trim().length > 0 &&
+    typeof maybeItem.quality === 'string' &&
+    maybeItem.quality.trim().length > 0 &&
+    typeof maybeItem.location === 'string' &&
+    maybeItem.location.trim().length > 0
+  )
+}
+
 export function startClipboardMonitor(
   captureHandler: (payload: string) => { inserted: boolean; id: string | null } = captureClipboardPayload,
 ) {
@@ -82,9 +111,6 @@ export function startClipboardMonitor(
   const timer = setInterval(async () => {
     try {
       const hasRequiredGames = await checkRequiredGameProcessesRunning()
-      if (!hasRequiredGames) {
-        return
-      }
 
       const { default: clipboard } = await import('clipboardy')
       const current = (await clipboard.read()).trim()
@@ -114,6 +140,18 @@ export function startClipboardMonitor(
         }
         lastValue = current
         return
+      }
+
+      if (!hasRequiredGames && !isStrongPd2ItemCandidate(parsed)) {
+        if (isDev && Date.now() - lastProcessGateBlockedLogAt > 5000) {
+          console.log('[clipboard] process gate blocked capture (waiting for PD2/Diablo2)')
+          lastProcessGateBlockedLogAt = Date.now()
+        }
+        return
+      }
+
+      if (!hasRequiredGames && isDev) {
+        console.log('[clipboard] process gate bypassed by strong PD2 item payload')
       }
 
       try {

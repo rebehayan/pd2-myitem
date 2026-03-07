@@ -51,159 +51,81 @@
 
 ---
 
+# 현재 운영 기본값 (도메인 미보유 기준)
+
+아직 도메인이 없으면 로컬 기준으로 아래 값을 사용한다.
+
+```env
+API_PORT=4310
+ENABLE_CLIPBOARD_MONITOR=true
+VITE_API_BASE=
+PUBLIC_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
+TRUST_PROXY_FOR_RATE_LIMIT=false
+```
+
+도메인을 발급한 뒤에는 `PUBLIC_ALLOWED_ORIGINS`를 실제 도메인으로 교체한다.
+
+예
+
+```env
+PUBLIC_ALLOWED_ORIGINS=https://your-domain.com
+TRUST_PROXY_FOR_RATE_LIMIT=true
+```
+
+---
+
+# QR 점검 명령
+
+기본 점검
+
+```bash
+npm run verify:qr
+```
+
+Windows cmd
+
+```bat
+set "VERIFY_API_BASE=http://127.0.0.1:4310"
+set "VERIFY_EXPECT_PUBLIC_NO_KEY=true"
+npm run verify:qr
+```
+
+Windows PowerShell
+
+```powershell
+$env:VERIFY_API_BASE = "http://127.0.0.1:4310"
+$env:VERIFY_EXPECT_PUBLIC_NO_KEY = "true"
+npm run verify:qr
+```
+
+---
+
 # 설정 저장 위치
 
 SQLite settings table
 
 또는
 
-## config.json\
+## config.json
 
-# 예시 config.json
+예시
 
-````json\
-{\
-  "overlay_item_limit": 10,\
-  "overlay_opacity": 0.8,\
-  "theme": "dark",\
-  "qr_public_enabled": true\
+```json
+{
+  "overlay_item_limit": 10,
+  "overlay_opacity": 0.8,
+  "theme": "dark",
+  "qr_public_enabled": true
 }
-
-* * * * *
-
-설정 UI 위치
-========
-
-Dashboard → Settings
-
-참고\
-`docs/ui/21-dashboard-ui.md`\
----
-
-# 3️⃣ `docs/operations/62-security-and-sharing.md`
-
-```md\
-# Security and Sharing
-
-QR 페이지와 공개 데이터 접근 정책 정의.
+```
 
 ---
 
-# 목적
+# 설정 UI 위치
 
-오늘 획득 아이템을 외부에 공개할 때 보안을 유지한다.
+Dashboard -> Settings
 
----
+참고
 
-# 공개 데이터
-
-공개 가능한 정보
-
-- 아이템 이름\
-- 품질\
-- 썸네일\
-- 획득 시간
-
-공개하지 않는 정보
-
-- PC 경로\
-- 로컬 DB\
-- 내부 ID
-
----
-
-# 공개 URL 방식
-
-두 가지 방식 가능
-
-## 1. 공개 URL
-
-예
-
-https://example.com/today\
-모든 사람이 접근 가능
-
----
-
-## 2. 토큰 URL
-
-예
-
-https://example.com/today?key=abc123\
-토큰을 아는 사람만 접근
-
----
-
-# 추천 방식
-
-초기
-
-토큰 URL
-
----
-
-# 토큰 생성
-
-길이
-
-32 chars\
-예
-
-8fa3d92c41c0eab52e0a1f7f1d8d1c31\
----
-
-# QR 코드 정책
-
-QR 코드는 항상 **token URL**로 생성한다.
-
-예
-
-/today?key=token\
----
-
-# 데이터 보호
-
-공개 페이지는 다음 정보만 제공
-
-| 항목 | 공개 여부 |\
-|----|-----------|\
-| 아이템 이름 | O |\
-| 썸네일 | O |\
-| stats | O |\
-| 내부 ID | X |
-
----
-
-# Rate Limit
-
-외부 접근 제한
-
-예
-
-60 req/min\
----
-
-# 캐싱
-
-오늘 페이지는 캐싱 가능
-
-예
-
-30 sec cache\
----
-
-# 로그
-
-접근 로그 기록 가능
-
-예
-
-IP\
-timestamp\
----
-
-# 참고
-
-참고\
-`docs/ui/23-qr-page-flow.md`
-````
+- `docs/ui/21-dashboard-ui.md`
+- `docs/operations/62-security-and-sharing.md`

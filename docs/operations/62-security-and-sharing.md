@@ -92,6 +92,13 @@ QR 링크 예
 
 ## /today?key={token}\
 
+운영 시 공개 프록시 규칙
+
+- 공개 라우팅 허용: `/api/health`, `/api/today/public`만 허용
+- 비공개 유지: `/api/settings`, `/api/items/*`, `/api/events/*`, `/api/ingest`
+- 프록시는 `Host`를 공개 도메인으로 고정하고 `x-forwarded-for`를 항상 주입
+- `TRUST_PROXY_FOR_RATE_LIMIT=true`는 신뢰 가능한 프록시일 때만 사용
+
 # Rate Limit
 
 외부 접근이 과도해지는 것을 방지한다.
@@ -156,3 +163,21 @@ docs/ui/23-qr-page-flow.md
 
 참고\
 docs/operations/61-config-and-settings.md
+
+---
+
+# 도메인 없는 현재 단계 운영
+
+도메인이 없으면 로컬에서 아래 값으로 유지한다.
+
+```env
+PUBLIC_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
+TRUST_PROXY_FOR_RATE_LIMIT=false
+```
+
+도메인 발급 후 교체 예시
+
+```env
+PUBLIC_ALLOWED_ORIGINS=https://your-domain.com
+TRUST_PROXY_FOR_RATE_LIMIT=true
+```

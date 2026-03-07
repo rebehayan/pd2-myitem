@@ -12,12 +12,9 @@ const defaults: AppSettings = {
 }
 
 function generateToken(): string {
-  const alphabet = 'abcdef0123456789'
-  let out = ''
-  for (let i = 0; i < 32; i += 1) {
-    out += alphabet[Math.floor(Math.random() * alphabet.length)]
-  }
-  return out
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 export function SettingsPage() {
@@ -51,10 +48,7 @@ export function SettingsPage() {
 
       <label className="settings-field">
         Overlay Item Count
-        <input
-          type="number"
-          min={1}
-          max={20}
+        <select
           value={settings.overlay_item_limit}
           onChange={(event) =>
             setSettings((prev) => ({
@@ -62,7 +56,11 @@ export function SettingsPage() {
               overlay_item_limit: Number(event.target.value),
             }))
           }
-        />
+        >
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={15}>15</option>
+        </select>
       </label>
 
       <label className="settings-field">
