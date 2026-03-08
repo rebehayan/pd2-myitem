@@ -1,15 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { clearItems, deleteItem, fetchItemDetail, fetchRecentItems, fetchSettings } from '../lib/api'
 import type { AppSettings, ItemDetail, ItemSummary } from '../lib/types'
+import { getStatToneClass } from '../lib/item-stat-tone'
+import { useItemCaptureRefresh } from '../lib/use-item-capture-refresh'
+import { resolveItemTheme } from '../theme/resolveItemTheme'
 
-const dashboardPollMs = 1000
+function statInline(stat: ItemDetail['stats'][number]): string {
+  if (stat.statValue === null) {
+    return stat.statName
+  }
+  return `${stat.statName} ${stat.statValue}`
+}
 
 function buildDiscordText(item: ItemDetail): string {
   const title = `${item.displayName} (${item.quality} ${item.type})`
   const info = `iLvl ${item.iLevel} | Def ${item.defense ?? '-'}${item.isCorrupted ? ' | (Corrupted)' : ''}`
-  const stats = item.stats.slice(0, 4).map((stat) => `${stat.statName} ${stat.statValue}`).join(' | ')
+  const stats = item.stats.slice(0, 4).map(statInline).join(' | ')
   return [title, info, stats].filter((line) => line.length > 0).join('\n')
 }
 
@@ -19,7 +27,11 @@ function buildRedditText(item: ItemDetail): string {
   lines.push(`- Defense: ${item.defense ?? '-'}`)
   for (const stat of item.stats.slice(0, 6)) {
     const rangeText = stat.rangeMin !== null && stat.rangeMax !== null ? ` (${stat.rangeMin}-${stat.rangeMax})` : ''
-    lines.push(`- ${stat.statName}: ${stat.statValue}${rangeText}`)
+    if (stat.statValue === null) {
+      lines.push(`- ${stat.statName}`)
+    } else {
+      lines.push(`- ${stat.statName}: ${stat.statValue}${rangeText}`)
+    }
   }
   return lines.join('\n')
 }
@@ -29,7 +41,14 @@ function buildCompactText(item: ItemDetail): string {
   if (item.quantity !== null) {
     parts.push(`x${item.quantity}`)
   }
-  parts.push(...item.stats.slice(0, 3).map((stat) => `${stat.statName.replaceAll(' ', '')}${stat.statValue}`))
+  parts.push(
+    ...item.stats.slice(0, 3).map((stat) => {
+      if (stat.statValue === null) {
+        return stat.statName.replaceAll(' ', '')
+      }
+      return `${stat.statName.replaceAll(' ', '')}${stat.statValue}`
+    }),
+  )
   if (item.isCorrupted) {
     parts.push('Corr')
   }
@@ -39,6 +58,7 @@ function buildCompactText(item: ItemDetail): string {
 export function DashboardPage() {
   const [items, setItems] = useState<ItemSummary[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [selectedItem, setSelectedItem] = useState<ItemDetail | null>(null)
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [query, setQuery] = useState('')
@@ -50,10 +70,16 @@ export function DashboardPage() {
   const [actionMessage, setActionMessage] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const loadingRef = useRef(false)
+  const mountedRef = useRef(true)
 
   const refreshItems = useCallback(async () => {
     const result = await fetchRecentItems()
     setItems(result)
+    setSelectedIds((prev) => {
+      const next = new Set(result.map((item) => item.id).filter((id) => prev.has(id)))
+      return next
+    })
     setSelectedId((prev) => {
       if (prev && result.some((item) => item.id === prev)) {
         return prev
@@ -63,45 +89,41 @@ export function DashboardPage() {
     return result
   }, [])
 
-  useEffect(() => {
-    let disposed = false
-    let loading = false
+  const loadItems = useCallback(async () => {
+    if (loadingRef.current || !mountedRef.current) {
+      return
+    }
+    loadingRef.current = true
 
-    const load = async () => {
-      if (loading) {
+    try {
+      const result = await refreshItems()
+      if (!mountedRef.current) {
         return
       }
-      loading = true
-
-      try {
-        const result = await refreshItems()
-        if (disposed) {
-          return
-        }
-
-        setError(null)
-        if (result.length === 0) {
-          setSelectedItem(null)
-        }
-      } catch (err: unknown) {
-        if (disposed) {
-          return
-        }
-        const message = err instanceof Error ? err.message : 'Unknown error'
-        setError(message)
-      } finally {
-        loading = false
+      setError(null)
+      if (result.length === 0) {
+        setSelectedItem(null)
       }
-    }
-
-    load()
-    const timer = window.setInterval(load, dashboardPollMs)
-
-    return () => {
-      disposed = true
-      window.clearInterval(timer)
+    } catch (err: unknown) {
+      if (!mountedRef.current) {
+        return
+      }
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      setError(message)
+    } finally {
+      loadingRef.current = false
     }
   }, [refreshItems])
+
+  useEffect(() => {
+    mountedRef.current = true
+    void loadItems()
+    return () => {
+      mountedRef.current = false
+    }
+  }, [loadItems])
+
+  useItemCaptureRefresh(loadItems)
 
   useEffect(() => {
     let disposed = false
@@ -167,6 +189,23 @@ export function DashboardPage() {
     })
   }, [items, query])
 
+  const selectedTheme = useMemo(() => {
+    if (!selectedItem) {
+      return null
+    }
+    return resolveItemTheme({
+      displayName: selectedItem.displayName,
+      type: selectedItem.type,
+      quality: selectedItem.quality,
+      category: selectedItem.category,
+      isCorrupted: selectedItem.isCorrupted,
+      quantity: selectedItem.quantity,
+      analysisProfile: selectedItem.analysisProfile,
+      analysisTags: selectedItem.analysisTags,
+      stats: selectedItem.stats,
+    })
+  }, [selectedItem])
+
   const onCopy = async (label: string, value: string) => {
     try {
       await navigator.clipboard.writeText(value)
@@ -197,6 +236,64 @@ export function DashboardPage() {
       window.setTimeout(() => setActionMessage(null), 1500)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete selected item.'
+      setActionError(message)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const onToggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const onToggleAll = () => {
+    setSelectedIds((prev) => {
+      const filteredIds = filteredItems.map((item) => item.id)
+      const allSelected = filteredIds.every((id) => prev.has(id))
+      if (allSelected) {
+        const next = new Set(prev)
+        for (const id of filteredIds) {
+          next.delete(id)
+        }
+        return next
+      }
+      const next = new Set(prev)
+      for (const id of filteredIds) {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const onDeleteChecked = async () => {
+    if (deleting || selectedIds.size === 0) {
+      return
+    }
+    if (!window.confirm(`Delete ${selectedIds.size} selected item(s)?`)) {
+      return
+    }
+
+    try {
+      setDeleting(true)
+      setActionError(null)
+      await Promise.all(Array.from(selectedIds).map((id) => deleteItem(id)))
+      const latest = await refreshItems()
+      if (latest.length === 0) {
+        setSelectedItem(null)
+      }
+      setSelectedIds(new Set())
+      setActionMessage(`Deleted ${selectedIds.size} item(s).`)
+      window.setTimeout(() => setActionMessage(null), 1500)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete selected items.'
       setActionError(message)
     } finally {
       setDeleting(false)
@@ -277,7 +374,7 @@ export function DashboardPage() {
   }, [qrLink, showQr])
 
   return (
-    <section className="panel">
+    <section className="d2-panel d2-ui">
       <h2>Dashboard</h2>
       <p>아이템 검색, 상세 확인, 공유 텍스트 생성을 한 화면에서 처리합니다.</p>
       {error ? <p>{error}</p> : null}
@@ -288,13 +385,18 @@ export function DashboardPage() {
           placeholder="Search by name, type, quality"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          className="d2-input"
         />
       </div>
 
-      <section className="panel dashboard-qr" aria-label="QR share panel">
+      <section className="d2-panel dashboard-qr" aria-label="QR share panel">
         <div className="dashboard-qr__header">
           <h3>Today QR</h3>
-          <button type="button" className="button-secondary" onClick={() => setShowQr((prev) => !prev)}>
+          <button
+            type="button"
+            className="d2-button d2-button--secondary d2-button--sm"
+            onClick={() => setShowQr((prev) => !prev)}
+          >
             {showQr ? 'Hide QR' : 'Show QR'}
           </button>
         </div>
@@ -302,7 +404,7 @@ export function DashboardPage() {
         <p>
           <strong>Share URL:</strong> {qrLink}
         </p>
-        <button type="button" className="button-primary" onClick={() => onCopy('today-link', qrLink)}>
+        <button type="button" className="d2-button d2-button--primary" onClick={() => onCopy('today-link', qrLink)}>
           Copy Today Link
         </button>
         {settingsError ? <p>{settingsError}</p> : null}
@@ -310,28 +412,75 @@ export function DashboardPage() {
       </section>
 
       <div className="dashboard-layout">
-        <section className="panel dashboard-list" aria-label="Recent Items List">
+        <section className="d2-panel dashboard-list" aria-label="Recent Items List">
           <h3>Recent Items</h3>
-          {filteredItems.map((item) => (
+          <div className="dashboard-list__actions">
             <button
-              key={item.id}
               type="button"
-              className={`dashboard-row${selectedId === item.id ? ' is-active' : ''}`}
-              onClick={() => setSelectedId(item.id)}
+              className="d2-button d2-button--secondary d2-button--sm"
+              onClick={onToggleAll}
+              disabled={filteredItems.length === 0}
             >
-              {item.thumbnail ? <img className="dashboard-row__thumb" src={item.thumbnail} alt={item.displayName} /> : null}
-              <div className="dashboard-row__content">
-                <strong>{item.displayName}</strong>
-                <span>{item.quality}</span>
-                <span>Qty: {item.quantity ?? 1}</span>
-                {item.isCorrupted ? <span className="dashboard-badge">Corrupted</span> : null}
-              </div>
+              {filteredItems.length > 0 && filteredItems.every((item) => selectedIds.has(item.id))
+                ? 'Unselect All'
+                : 'Select All'}
             </button>
-          ))}
+            <button
+              type="button"
+              className="d2-button d2-button--secondary d2-button--sm"
+              onClick={onDeleteChecked}
+              disabled={selectedIds.size === 0 || deleting}
+            >
+              Delete Checked ({selectedIds.size})
+            </button>
+          </div>
+          {filteredItems.map((item) => {
+            const theme = resolveItemTheme({
+              displayName: item.displayName,
+              type: item.type,
+              quality: item.quality,
+              category: item.category,
+              isCorrupted: item.isCorrupted,
+              quantity: item.quantity,
+              analysisProfile: item.analysisProfile,
+              analysisTags: item.analysisTags,
+            })
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`dashboard-row item-themed${selectedId === item.id ? ' is-active' : ''}`}
+                style={theme.style}
+                onClick={() => setSelectedId(item.id)}
+              >
+                <input
+                  type="checkbox"
+                  className="dashboard-row__checkbox"
+                  checked={selectedIds.has(item.id)}
+                  onChange={() => onToggleSelected(item.id)}
+                  onClick={(event) => event.stopPropagation()}
+                />
+                {item.thumbnail ? (
+                  <img className="dashboard-row__thumb" src={item.thumbnail} alt={item.displayName} />
+                ) : null}
+                <div className="dashboard-row__content">
+                  <strong className="item-theme-name">{item.displayName}</strong>
+                  <span>{item.quality}</span>
+                  <span>Qty: {item.quantity ?? 1}</span>
+                  {item.isCorrupted ? <span className="dashboard-badge">Corrupted</span> : null}
+                </div>
+              </button>
+            )
+          })}
           {filteredItems.length === 0 ? <p>No matching items.</p> : null}
         </section>
 
-        <section className="panel dashboard-detail" aria-label="Item Detail Panel">
+        <section
+          className={`d2-panel dashboard-detail${selectedTheme ? ' item-themed' : ''}`}
+          style={selectedTheme?.style}
+          aria-label="Item Detail Panel"
+        >
           <h3>Item Detail</h3>
           {!selectedItem ? <p>Select an item to view details.</p> : null}
           {selectedItem ? (
@@ -339,18 +488,40 @@ export function DashboardPage() {
               {selectedItem.thumbnail ? (
                 <img className="item-thumbnail" src={selectedItem.thumbnail} alt={selectedItem.displayName} />
               ) : null}
-              <p>Name: {selectedItem.name ?? selectedItem.displayName}</p>
+              <p>
+                Name: <strong className="item-theme-name">{selectedItem.name ?? selectedItem.displayName}</strong>
+              </p>
+              {selectedTheme ? (
+                <div className="item-theme-badges">
+                  <span className="item-theme-badge">{selectedTheme.rule.label}</span>
+                </div>
+              ) : null}
               <p>Type: {selectedItem.type}</p>
               <p>Item Level: {selectedItem.iLevel}</p>
               <p>Defense: {selectedItem.defense ?? '-'}</p>
               <p>Location: {selectedItem.location}</p>
-              <div className="panel">
+              <div className="d2-panel">
                 <h4>Stats</h4>
                 {selectedItem.stats.length === 0 ? <p>No stats</p> : null}
                 {selectedItem.stats.map((stat, idx) => (
-                  <p key={`${stat.statName}-${idx}`}>
-                    {stat.statName}: {stat.statValue}
-                    {stat.rangeMin !== null && stat.rangeMax !== null ? ` (${stat.rangeMin}-${stat.rangeMax})` : ''}
+                  <p key={`${stat.statName}-${idx}`} className="item-theme-stat">
+                    {stat.statValue === null ? (
+                      <span className={`item-theme-stat-label${getStatToneClass(stat.statName)}`}>
+                        {stat.statName}
+                      </span>
+                    ) : (
+                      <>
+                        <span className={`item-theme-stat-label${getStatToneClass(stat.statName)}`}>
+                          {stat.statName}:
+                        </span>
+                        <span className={`item-theme-stat-value${getStatToneClass(stat.statName)}`}>
+                          {stat.statValue}
+                          {stat.rangeMin !== null && stat.rangeMax !== null ? (
+                            <span className="item-theme-stat-range"> ({stat.rangeMin}-{stat.rangeMax})</span>
+                          ) : null}
+                        </span>
+                      </>
+                    )}
                   </p>
                 ))}
               </div>
@@ -358,31 +529,41 @@ export function DashboardPage() {
                 <div className="dashboard-share">
                 <button
                   type="button"
-                  className="button-primary"
+                  className="d2-button d2-button--primary d2-button--sm"
                   onClick={() => onCopy('discord', buildDiscordText(selectedItem))}
                 >
                   Copy Discord
                 </button>
                 <button
                   type="button"
-                  className="button-secondary"
+                  className="d2-button d2-button--secondary d2-button--sm"
                   onClick={() => onCopy('reddit', buildRedditText(selectedItem))}
                 >
                   Copy Reddit
                 </button>
                 <button
                   type="button"
-                  className="button-secondary"
+                  className="d2-button d2-button--secondary d2-button--sm"
                   onClick={() => onCopy('compact', buildCompactText(selectedItem))}
                 >
                   Copy Compact
                 </button>
                 {copiedLabel ? <p>Copied {copiedLabel} format.</p> : null}
                 <div>
-                  <button type="button" className="button-secondary" onClick={onDeleteSelected} disabled={deleting}>
+                  <button
+                    type="button"
+                    className="d2-button d2-button--secondary d2-button--sm"
+                    onClick={onDeleteSelected}
+                    disabled={deleting}
+                  >
                     Delete Selected
                   </button>
-                  <button type="button" className="button-secondary" onClick={onClearAll} disabled={deleting}>
+                  <button
+                    type="button"
+                    className="d2-button d2-button--secondary d2-button--sm"
+                    onClick={onClearAll}
+                    disabled={deleting}
+                  >
                     Clear List
                   </button>
                 </div>
