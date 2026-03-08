@@ -32,6 +32,12 @@ interface ApiItemSummary {
   thumbnail: string | null
   captured_at?: string
   capturedAt?: string
+  key_stats?: string[]
+  category?: string
+  analysis_profile?: string
+  analysis_tags?: string[]
+  analysisProfile?: string
+  analysisTags?: string[]
 }
 
 function toItemSummary(item: ApiItemSummary): ItemSummary {
@@ -44,6 +50,10 @@ function toItemSummary(item: ApiItemSummary): ItemSummary {
     isCorrupted: item.is_corrupted ?? item.isCorrupted ?? false,
     thumbnail: item.thumbnail,
     capturedAt: item.captured_at ?? item.capturedAt ?? new Date(0).toISOString(),
+    keyStats: item.key_stats ?? [],
+    category: item.category,
+    analysisProfile: item.analysis_profile ?? item.analysisProfile,
+    analysisTags: item.analysis_tags ?? item.analysisTags,
   }
 }
 
@@ -67,6 +77,8 @@ interface ApiTodayPublicItem {
   thumbnail: string | null
   captured_at: string
   category?: string
+  analysis_profile?: string
+  analysis_tags?: string[]
 }
 
 interface ApiTodayPublicPayload {
@@ -84,6 +96,8 @@ function toTodayPublicItem(item: ApiTodayPublicItem): TodayPublicItem {
     thumbnail: item.thumbnail,
     capturedAt: item.captured_at,
     category: item.category,
+    analysisProfile: item.analysis_profile,
+    analysisTags: item.analysis_tags,
   }
 }
 
@@ -103,10 +117,59 @@ export async function fetchTodayPublicData(key?: string): Promise<TodayPublicPay
   }
 }
 
-export async function fetchOverlayItems(): Promise<ItemSummary[]> {
-  const res = await fetch(`${API_BASE}/api/overlay`)
-  const items = await parseJson<ApiItemSummary[]>(res)
-  return items.map(toItemSummary)
+interface ApiOverlayPayload {
+  title: string
+  title_enabled: boolean
+  title_size?: number
+  title_color?: string
+  title_background_color?: string
+  title_padding?: number
+  items: ApiItemSummary[]
+}
+
+export async function fetchOverlayItems(): Promise<{
+  title: string
+  titleEnabled: boolean
+  titleSize?: number
+  titleColor?: string
+  titleBackgroundColor?: string
+  titlePadding?: number
+  items: ItemSummary[]
+}> {
+  const res = await fetch(`${API_BASE}/api/overlay`, { cache: 'no-store' })
+  const payload = await parseJson<unknown>(res)
+  if (Array.isArray(payload)) {
+    let fallbackTitle = 'Overlay Feed'
+    let fallbackTitleEnabled = true
+    try {
+      const settings = await fetchSettings()
+      fallbackTitle = settings.overlay_title ?? fallbackTitle
+      fallbackTitleEnabled = settings.overlay_title_enabled ?? fallbackTitleEnabled
+    } catch {
+      // ignore
+    }
+    return {
+      title: fallbackTitle,
+      titleEnabled: fallbackTitleEnabled,
+      titleSize: settings.overlay_title_size,
+      titleColor: settings.overlay_title_color,
+      titleBackgroundColor: settings.overlay_title_background_color,
+      titlePadding: settings.overlay_title_padding,
+      items: payload.map(toItemSummary),
+    }
+  }
+  const overlayPayload = payload as ApiOverlayPayload
+  const items = Array.isArray(overlayPayload.items) ? overlayPayload.items : []
+  return {
+    title: typeof overlayPayload.title === 'string' && overlayPayload.title.trim() ? overlayPayload.title : 'Overlay Feed',
+    titleEnabled: typeof overlayPayload.title_enabled === 'boolean' ? overlayPayload.title_enabled : true,
+    titleSize: typeof overlayPayload.title_size === 'number' ? overlayPayload.title_size : undefined,
+    titleColor: typeof overlayPayload.title_color === 'string' ? overlayPayload.title_color : undefined,
+    titleBackgroundColor:
+      typeof overlayPayload.title_background_color === 'string' ? overlayPayload.title_background_color : undefined,
+    titlePadding: typeof overlayPayload.title_padding === 'number' ? overlayPayload.title_padding : undefined,
+    items: items.map(toItemSummary),
+  }
 }
 
 interface ApiTodayStats {

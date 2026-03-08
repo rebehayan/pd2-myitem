@@ -54,6 +54,10 @@ interface ApiItemSummary {
   is_corrupted: boolean
   thumbnail: string | null
   captured_at: string
+  key_stats?: string[]
+  category: string
+  analysis_profile: string
+  analysis_tags: string[]
 }
 
 interface ApiTodayPublicItem {
@@ -64,6 +68,8 @@ interface ApiTodayPublicItem {
   thumbnail: string | null
   captured_at: string
   category?: string
+  analysis_profile?: string
+  analysis_tags?: string[]
 }
 
 interface ApiTodayPublicPayload {
@@ -135,8 +141,12 @@ function toApiItemSummary(item: {
   isCorrupted: boolean
   thumbnail: string | null
   capturedAt: string
+  keyStats?: string[]
+  category?: string
+  analysisProfile?: string
+  analysisTags?: string[]
 }): ApiItemSummary {
-  const rawThumbnail = item.thumbnail ?? 'generic/item_unknown.png'
+  const rawThumbnail = item.thumbnail ?? 'generic/item_unknown.svg'
   const normalizedThumbnail = rawThumbnail.startsWith('/icons/') ? rawThumbnail : `/icons/${rawThumbnail}`
 
   return {
@@ -148,6 +158,10 @@ function toApiItemSummary(item: {
     is_corrupted: item.isCorrupted,
     thumbnail: normalizedThumbnail,
     captured_at: item.capturedAt,
+    key_stats: item.keyStats ?? [],
+    category: item.category ?? 'misc',
+    analysis_profile: item.analysisProfile ?? 'unknown',
+    analysis_tags: item.analysisTags ?? [],
   }
 }
 
@@ -189,7 +203,7 @@ function getTodayPublicPayload(): ApiTodayPublicPayload {
       materials: stats.materials,
     },
     items: todayItems.map((item) => {
-      const rawThumbnail = item.thumbnail ?? 'generic/item_unknown.png'
+      const rawThumbnail = item.thumbnail ?? 'generic/item_unknown.svg'
       const normalizedThumbnail = rawThumbnail.startsWith('/icons/') ? rawThumbnail : `/icons/${rawThumbnail}`
 
       return {
@@ -200,6 +214,8 @@ function getTodayPublicPayload(): ApiTodayPublicPayload {
         thumbnail: normalizedThumbnail,
         captured_at: item.capturedAt,
         category: item.category ?? item.type,
+        analysis_profile: item.analysisProfile ?? 'unknown',
+        analysis_tags: item.analysisTags ?? [],
       }
     }),
   }
@@ -228,7 +244,15 @@ app.get('/api/overlay', (req, res) => {
     return
   }
   const settings = getSettings()
-  res.json(getOverlayItems(settings.overlay_item_limit).map(toApiItemSummary))
+  res.json({
+    title: settings.overlay_title,
+    title_enabled: settings.overlay_title_enabled,
+    title_size: settings.overlay_title_size,
+    title_color: settings.overlay_title_color,
+    title_background_color: settings.overlay_title_background_color,
+    title_padding: settings.overlay_title_padding,
+    items: getOverlayItems(settings.overlay_item_limit).map(toApiItemSummary),
+  })
 })
 
 app.get('/api/stats/today', (req, res) => {
@@ -287,9 +311,15 @@ const settingsBody = z.object({
   overlay_item_limit: z.number().int().min(1).max(20).optional(),
   overlay_position: z.enum(['right', 'left', 'bottom']).optional(),
   overlay_opacity: z.number().min(0.1).max(1).optional(),
+  overlay_title: z.string().max(60).optional(),
+  overlay_title_enabled: z.boolean().optional(),
+  overlay_title_size: z.number().int().min(12).max(36).optional(),
+  overlay_title_color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  overlay_title_background_color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  overlay_title_padding: z.number().int().min(0).max(24).optional(),
   theme: z.enum(['light', 'dark']).optional(),
   qr_public_enabled: z.boolean().optional(),
-  qr_token: z.string().regex(/^[a-f0-9]{32}$/i).optional(),
+  qr_token: z.union([z.string().regex(/^[a-f0-9]{32}$/i), z.literal('')]).optional(),
 })
 
 app.put('/api/settings', (req, res) => {
@@ -315,7 +345,7 @@ app.get('/api/items/:id', (req, res) => {
     return
   }
 
-  const rawThumbnail = item.thumbnail ?? 'generic/item_unknown.png'
+  const rawThumbnail = item.thumbnail ?? 'generic/item_unknown.svg'
   const normalizedThumbnail = rawThumbnail.startsWith('/icons/') ? rawThumbnail : `/icons/${rawThumbnail}`
   res.json({
     ...item,
