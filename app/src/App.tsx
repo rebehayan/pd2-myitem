@@ -1,6 +1,8 @@
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
+import './components/d2-ui.css'
 import { DashboardPage } from './pages/DashboardPage'
+import { D2KitPage } from './pages/D2KitPage'
 import { ItemDetailPage } from './pages/ItemDetailPage'
 import { OverlayPage } from './pages/OverlayPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -39,6 +41,7 @@ function App() {
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/overlay" element={<OverlayPage />} />
           <Route path="/today" element={<TodayPage />} />
+          <Route path="/kit" element={<D2KitPage />} />
           <Route path="/item/:id" element={<ItemDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>

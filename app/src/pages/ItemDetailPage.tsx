@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { fetchItemDetail } from '../lib/api'
 import type { ItemDetail } from '../lib/types'
+import { getStatToneClass } from '../lib/item-stat-tone'
+import { resolveItemTheme } from '../theme/resolveItemTheme'
 
 export function ItemDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -25,7 +27,7 @@ export function ItemDetailPage() {
 
   if (invalidId) {
     return (
-      <section className="panel">
+      <section className="d2-panel d2-ui">
         <h2>Item Detail</h2>
         <p>Invalid item id</p>
         <Link to="/">Back to dashboard</Link>
@@ -35,7 +37,7 @@ export function ItemDetailPage() {
 
   if (error) {
     return (
-      <section className="panel">
+      <section className="d2-panel d2-ui">
         <h2>Item Detail</h2>
         <p>{error}</p>
         <Link to="/">Back to dashboard</Link>
@@ -45,7 +47,7 @@ export function ItemDetailPage() {
 
   if (!item) {
     return (
-      <section className="panel">
+      <section className="d2-panel d2-ui">
         <h2>Item Detail</h2>
         <p>Loading...</p>
       </section>
@@ -63,9 +65,24 @@ export function ItemDetailPage() {
     }
   }
 
+  const theme = resolveItemTheme({
+    displayName: item.displayName,
+    type: item.type,
+    quality: item.quality,
+    category: item.category,
+    isCorrupted: item.isCorrupted,
+    quantity: item.quantity,
+    analysisProfile: item.analysisProfile,
+    analysisTags: item.analysisTags,
+    stats: item.stats,
+  })
+
   return (
-    <section className="panel">
-      <h2>{item.displayName}</h2>
+    <section className="d2-panel d2-ui item-themed" style={theme.style}>
+      <h2 className="item-theme-name">{item.displayName}</h2>
+      <div className="item-theme-badges">
+        <span className="item-theme-badge">{theme.rule.label}</span>
+      </div>
       <p>Name: {item.name ?? '-'}</p>
       {item.thumbnail ? <img className="item-thumbnail" src={item.thumbnail} alt={item.displayName} /> : null}
       <p>Type: {item.type}</p>
@@ -75,17 +92,32 @@ export function ItemDetailPage() {
       <p>Location: {item.location}</p>
       <p>Captured: {new Date(item.capturedAt).toLocaleString()}</p>
 
-      <button type="button" className="button-primary" onClick={onCopyShare}>
+      <button type="button" className="d2-button d2-button--primary" onClick={onCopyShare}>
         {copied ? 'Copied' : 'Copy Share Text'}
       </button>
 
-      <div className="panel">
+      <div className="d2-panel">
         <h3>Stats</h3>
         {item.stats.length === 0 ? <p>No stats</p> : null}
         {item.stats.map((stat, index) => (
-          <p key={`${stat.statName}-${index}`}>
-            {stat.statName}: {stat.statValue}
-            {stat.rangeMin !== null && stat.rangeMax !== null ? ` (${stat.rangeMin}-${stat.rangeMax})` : ''}
+          <p key={`${stat.statName}-${index}`} className="item-theme-stat">
+            {stat.statValue === null ? (
+              <span className={`item-theme-stat-label${getStatToneClass(stat.statName)}`}>
+                {stat.statName}
+              </span>
+            ) : (
+              <>
+                <span className={`item-theme-stat-label${getStatToneClass(stat.statName)}`}>
+                  {stat.statName}:
+                </span>
+                <span className={`item-theme-stat-value${getStatToneClass(stat.statName)}`}>
+                  {stat.statValue}
+                  {stat.rangeMin !== null && stat.rangeMax !== null ? (
+                    <span className="item-theme-stat-range"> ({stat.rangeMin}-{stat.rangeMax})</span>
+                  ) : null}
+                </span>
+              </>
+            )}
           </p>
         ))}
       </div>

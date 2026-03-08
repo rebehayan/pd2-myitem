@@ -1,0 +1,600 @@
+[
+  {
+    "family": "hand_axe",
+    "category": "weapon",
+    "subtype": "axe_1h",
+    "normal": "Hand Axe",
+    "exceptional": "Hatchet",
+    "elite": "Tomahawk"
+  },
+  {
+    "family": "axe",
+    "category": "weapon",
+    "subtype": "axe_1h",
+    "normal": "Axe",
+    "exceptional": "Cleaver",
+    "elite": "Small Crescent"
+  },
+  {
+    "family": "double_axe",
+    "category": "weapon",
+    "subtype": "axe_1h",
+    "normal": "Double Axe",
+    "exceptional": "Twin Axe",
+    "elite": "Ettin Axe"
+  },
+  {
+    "family": "military_pick",
+    "category": "weapon",
+    "subtype": "axe_1h",
+    "normal": "Military Pick",
+    "exceptional": "Crowbill",
+    "elite": "War Spike"
+  },
+  {
+    "family": "war_axe",
+    "category": "weapon",
+    "subtype": "axe_1h",
+    "normal": "War Axe",
+    "exceptional": "Naga",
+    "elite": "Berserker Axe"
+  },
+
+  {
+    "family": "large_axe",
+    "category": "weapon",
+    "subtype": "axe_2h",
+    "normal": "Large Axe",
+    "exceptional": "Military Axe",
+    "elite": "Feral Axe"
+  },
+  {
+    "family": "broad_axe",
+    "category": "weapon",
+    "subtype": "axe_2h",
+    "normal": "Broad Axe",
+    "exceptional": "Bearded Axe",
+    "elite": "Silver-edged Axe"
+  },
+  {
+    "family": "battle_axe",
+    "category": "weapon",
+    "subtype": "axe_2h",
+    "normal": "Battle Axe",
+    "exceptional": "Tabar",
+    "elite": "Decapitator"
+  },
+  {
+    "family": "great_axe",
+    "category": "weapon",
+    "subtype": "axe_2h",
+    "normal": "Great Axe",
+    "exceptional": "Gothic Axe",
+    "elite": "Champion Axe"
+  },
+  {
+    "family": "giant_axe",
+    "category": "weapon",
+    "subtype": "axe_2h",
+    "normal": "Giant Axe",
+    "exceptional": "Ancient Axe",
+    "elite": "Glorious Axe"
+  },
+
+  {
+    "family": "club",
+    "category": "weapon",
+    "subtype": "club",
+    "normal": "Club",
+    "exceptional": "Cudgel",
+    "elite": "Tyrant Club"
+  },
+  {
+    "family": "spiked_club",
+    "category": "weapon",
+    "subtype": "club",
+    "normal": "Spiked Club",
+    "exceptional": "Barbed Club",
+    "elite": "Reinforced Mace"
+  },
+  {
+    "family": "mace",
+    "category": "weapon",
+    "subtype": "mace_1h",
+    "normal": "Mace",
+    "exceptional": "Flanged Mace",
+    "elite": "Jagged Star"
+  },
+  {
+    "family": "morning_star",
+    "category": "weapon",
+    "subtype": "mace_1h",
+    "normal": "Morning Star",
+    "exceptional": "Morning Star",
+    "elite": "Devil Star"
+  },
+  {
+    "family": "flail",
+    "category": "weapon",
+    "subtype": "mace_1h",
+    "normal": "Flail",
+    "exceptional": "Knout",
+    "elite": "Scourge"
+  },
+
+  {
+    "family": "war_hammer",
+    "category": "weapon",
+    "subtype": "hammer_1h",
+    "normal": "War Hammer",
+    "exceptional": "Battle Hammer",
+    "elite": "Legendary Mallet"
+  },
+  {
+    "family": "maul",
+    "category": "weapon",
+    "subtype": "mace_2h",
+    "normal": "Maul",
+    "exceptional": "Great Maul",
+    "elite": "Thunder Maul"
+  },
+
+  {
+    "family": "short_sword",
+    "category": "weapon",
+    "subtype": "sword_1h",
+    "normal": "Short Sword",
+    "exceptional": "Gladius",
+    "elite": "Falcata"
+  },
+  {
+    "family": "scimitar",
+    "category": "weapon",
+    "subtype": "sword_1h",
+    "normal": "Scimitar",
+    "exceptional": "Cutlass",
+    "elite": "Ataghan"
+  },
+  {
+    "family": "sabre",
+    "category": "weapon",
+    "subtype": "sword_1h",
+    "normal": "Sabre",
+    "exceptional": "Shamshir",
+    "elite": "Elegant Blade"
+  },
+  {
+    "family": "falchion",
+    "category": "weapon",
+    "subtype": "sword_1h",
+    "normal": "Falchion",
+    "exceptional": "Tulwar",
+    "elite": "Hydra Edge"
+  },
+  {
+    "family": "crystal_sword",
+    "category": "weapon",
+    "subtype": "sword_1h",
+    "normal": "Crystal Sword",
+    "exceptional": "Dimensional Blade",
+    "elite": "Phase Blade"
+  },
+  {
+    "family": "broad_sword",
+    "category": "weapon",
+    "subtype": "sword_1h",
+    "normal": "Broad Sword",
+    "exceptional": "Battle Sword",
+    "elite": "Conquest Sword"
+  },
+  {
+    "family": "long_sword",
+    "category": "weapon",
+    "subtype": "sword_1h",
+    "normal": "Long Sword",
+    "exceptional": "Rune Sword",
+    "elite": "Cryptic Sword"
+  },
+  {
+    "family": "war_sword",
+    "category": "weapon",
+    "subtype": "sword_1h",
+    "normal": "War Sword",
+    "exceptional": "Ancient Sword",
+    "elite": "Mythical Sword"
+  },
+
+  {
+    "family": "two_handed_sword",
+    "category": "weapon",
+    "subtype": "sword_2h",
+    "normal": "Two-Handed Sword",
+    "exceptional": "Espandon",
+    "elite": "Legend Sword"
+  },
+  {
+    "family": "claymore",
+    "category": "weapon",
+    "subtype": "sword_2h",
+    "normal": "Claymore",
+    "exceptional": "Dacian Falx",
+    "elite": "Highland Blade"
+  },
+  {
+    "family": "giant_sword",
+    "category": "weapon",
+    "subtype": "sword_2h",
+    "normal": "Giant Sword",
+    "exceptional": "Tusk Sword",
+    "elite": "Balrog Blade"
+  },
+  {
+    "family": "bastard_sword",
+    "category": "weapon",
+    "subtype": "sword_2h",
+    "normal": "Bastard Sword",
+    "exceptional": "Gothic Sword",
+    "elite": "Champion Sword"
+  },
+  {
+    "family": "flamberge",
+    "category": "weapon",
+    "subtype": "sword_2h",
+    "normal": "Flamberge",
+    "exceptional": "Zweihander",
+    "elite": "Colossus Sword"
+  },
+  {
+    "family": "great_sword",
+    "category": "weapon",
+    "subtype": "sword_2h",
+    "normal": "Great Sword",
+    "exceptional": "Executioner Sword",
+    "elite": "Colossus Blade"
+  },
+
+  {
+    "family": "dagger",
+    "category": "weapon",
+    "subtype": "dagger",
+    "normal": "Dagger",
+    "exceptional": "Poignard",
+    "elite": "Bone Knife"
+  },
+  {
+    "family": "dirk",
+    "category": "weapon",
+    "subtype": "dagger",
+    "normal": "Dirk",
+    "exceptional": "Rondel",
+    "elite": "Mithral Point"
+  },
+  {
+    "family": "kris",
+    "category": "weapon",
+    "subtype": "dagger",
+    "normal": "Kris",
+    "exceptional": "Cinquedeas",
+    "elite": "Fanged Knife"
+  },
+
+  {
+    "family": "javelin",
+    "category": "weapon",
+    "subtype": "javelin",
+    "normal": "Javelin",
+    "exceptional": "War Javelin",
+    "elite": "Hyperion Javelin"
+  },
+  {
+    "family": "pilum",
+    "category": "weapon",
+    "subtype": "javelin",
+    "normal": "Pilum",
+    "exceptional": "Great Pilum",
+    "elite": "Stygian Pilum"
+  },
+  {
+    "family": "short_spear",
+    "category": "weapon",
+    "subtype": "javelin",
+    "normal": "Short Spear",
+    "exceptional": "Simbilan",
+    "elite": "Balrog Spear"
+  },
+  {
+    "family": "glaive",
+    "category": "weapon",
+    "subtype": "javelin",
+    "normal": "Glaive",
+    "exceptional": "Spiculum",
+    "elite": "Ghost Glaive"
+  },
+  {
+    "family": "throwing_spear",
+    "category": "weapon",
+    "subtype": "javelin",
+    "normal": "Throwing Spear",
+    "exceptional": "Harpoon",
+    "elite": "Winged Harpoon"
+  },
+
+  {
+    "family": "spear",
+    "category": "weapon",
+    "subtype": "spear",
+    "normal": "Spear",
+    "exceptional": "War Spear",
+    "elite": "Hyperion Spear"
+  },
+  {
+    "family": "trident",
+    "category": "weapon",
+    "subtype": "spear",
+    "normal": "Trident",
+    "exceptional": "Fuscina",
+    "elite": "Stygian Pike"
+  },
+  {
+    "family": "brandistock",
+    "category": "weapon",
+    "subtype": "spear",
+    "normal": "Brandistock",
+    "exceptional": "War Fork",
+    "elite": "Mancatcher"
+  },
+  {
+    "family": "spetum",
+    "category": "weapon",
+    "subtype": "spear",
+    "normal": "Spetum",
+    "exceptional": "Yari",
+    "elite": "Ghost Spear"
+  },
+  {
+    "family": "pike",
+    "category": "weapon",
+    "subtype": "spear",
+    "normal": "Pike",
+    "exceptional": "Lance",
+    "elite": "War Pike"
+  },
+
+  {
+    "family": "bardiche",
+    "category": "weapon",
+    "subtype": "polearm",
+    "normal": "Bardiche",
+    "exceptional": "Lochaber Axe",
+    "elite": "Ogre Axe"
+  },
+  {
+    "family": "voulge",
+    "category": "weapon",
+    "subtype": "polearm",
+    "normal": "Voulge",
+    "exceptional": "Bill",
+    "elite": "Colossus Voulge"
+  },
+  {
+    "family": "scythe",
+    "category": "weapon",
+    "subtype": "polearm",
+    "normal": "Scythe",
+    "exceptional": "Battle Scythe",
+    "elite": "Threshers"
+  },
+  {
+    "family": "poleaxe",
+    "category": "weapon",
+    "subtype": "polearm",
+    "normal": "Poleaxe",
+    "exceptional": "Partizan",
+    "elite": "Cryptic Axe"
+  },
+  {
+    "family": "halberd",
+    "category": "weapon",
+    "subtype": "polearm",
+    "normal": "Halberd",
+    "exceptional": "Bec-de-Corbin",
+    "elite": "Great Poleaxe"
+  },
+  {
+    "family": "war_scythe",
+    "category": "weapon",
+    "subtype": "polearm",
+    "normal": "War Scythe",
+    "exceptional": "Grim Scythe",
+    "elite": "Giant Thresher"
+  },
+
+  {
+    "family": "short_bow",
+    "category": "weapon",
+    "subtype": "bow",
+    "normal": "Short Bow",
+    "exceptional": "Edge Bow",
+    "elite": "Spider Bow"
+  },
+  {
+    "family": "hunters_bow",
+    "category": "weapon",
+    "subtype": "bow",
+    "normal": "Hunter's Bow",
+    "exceptional": "Razor Bow",
+    "elite": "Blade Bow"
+  },
+  {
+    "family": "long_bow",
+    "category": "weapon",
+    "subtype": "bow",
+    "normal": "Long Bow",
+    "exceptional": "Cedar Bow",
+    "elite": "Shadow Bow"
+  },
+  {
+    "family": "composite_bow",
+    "category": "weapon",
+    "subtype": "bow",
+    "normal": "Composite Bow",
+    "exceptional": "Double Bow",
+    "elite": "Great Bow"
+  },
+  {
+    "family": "short_battle_bow",
+    "category": "weapon",
+    "subtype": "bow",
+    "normal": "Short Battle Bow",
+    "exceptional": "Short Siege Bow",
+    "elite": "Diamond Bow"
+  },
+  {
+    "family": "long_battle_bow",
+    "category": "weapon",
+    "subtype": "bow",
+    "normal": "Long Battle Bow",
+    "exceptional": "Long Siege Bow",
+    "elite": "Crusader Bow"
+  },
+  {
+    "family": "short_war_bow",
+    "category": "weapon",
+    "subtype": "bow",
+    "normal": "Short War Bow",
+    "exceptional": "Rune Bow",
+    "elite": "Ward Bow"
+  },
+  {
+    "family": "long_war_bow",
+    "category": "weapon",
+    "subtype": "bow",
+    "normal": "Long War Bow",
+    "exceptional": "Gothic Bow",
+    "elite": "Hydra Bow"
+  },
+
+  {
+    "family": "light_crossbow",
+    "category": "weapon",
+    "subtype": "crossbow",
+    "normal": "Light Crossbow",
+    "exceptional": "Arbalest",
+    "elite": "Pellet Bow"
+  },
+  {
+    "family": "crossbow",
+    "category": "weapon",
+    "subtype": "crossbow",
+    "normal": "Crossbow",
+    "exceptional": "Siege Crossbow",
+    "elite": "Gorgon Crossbow"
+  },
+  {
+    "family": "heavy_crossbow",
+    "category": "weapon",
+    "subtype": "crossbow",
+    "normal": "Heavy Crossbow",
+    "exceptional": "Ballista",
+    "elite": "Colossus Crossbow"
+  },
+  {
+    "family": "repeating_crossbow",
+    "category": "weapon",
+    "subtype": "crossbow",
+    "normal": "Repeating Crossbow",
+    "exceptional": "Chu-Ko-Nu",
+    "elite": "Demon Crossbow"
+  },
+
+  {
+    "family": "wand",
+    "category": "weapon",
+    "subtype": "wand",
+    "normal": "Wand",
+    "exceptional": "Burnt Wand",
+    "elite": "Polished Wand"
+  },
+  {
+    "family": "yew_wand",
+    "category": "weapon",
+    "subtype": "wand",
+    "normal": "Yew Wand",
+    "exceptional": "Petrified Wand",
+    "elite": "Tomb Wand"
+  },
+  {
+    "family": "bone_wand",
+    "category": "weapon",
+    "subtype": "wand",
+    "normal": "Bone Wand",
+    "exceptional": "Tomb Wand",
+    "elite": "Grave Wand"
+  },
+
+  {
+    "family": "scepter",
+    "category": "weapon",
+    "subtype": "scepter",
+    "normal": "Scepter",
+    "exceptional": "Rune Scepter",
+    "elite": "Mighty Scepter"
+  },
+  {
+    "family": "grand_scepter",
+    "category": "weapon",
+    "subtype": "scepter",
+    "normal": "Grand Scepter",
+    "exceptional": "Holy Water Sprinkler",
+    "elite": "Seraph Rod"
+  },
+  {
+    "family": "war_scepter",
+    "category": "weapon",
+    "subtype": "scepter",
+    "normal": "War Scepter",
+    "exceptional": "Divine Scepter",
+    "elite": "Caduceus"
+  },
+
+  {
+    "family": "staff",
+    "category": "weapon",
+    "subtype": "staff",
+    "normal": "Short Staff",
+    "exceptional": "Jo Staff",
+    "elite": "Walking Stick"
+  },
+  {
+    "family": "long_staff",
+    "category": "weapon",
+    "subtype": "staff",
+    "normal": "Long Staff",
+    "exceptional": "Quarterstaff",
+    "elite": "Stalagmite"
+  },
+  {
+    "family": "gnarled_staff",
+    "category": "weapon",
+    "subtype": "staff",
+    "normal": "Gnarled Staff",
+    "exceptional": "Cedar Staff",
+    "elite": "Elder Staff"
+  },
+  {
+    "family": "battle_staff",
+    "category": "weapon",
+    "subtype": "staff",
+    "normal": "Battle Staff",
+    "exceptional": "Gothic Staff",
+    "elite": "Shillelagh"
+  },
+  {
+    "family": "war_staff",
+    "category": "weapon",
+    "subtype": "staff",
+    "normal": "War Staff",
+    "exceptional": "Rune Staff",
+    "elite": "Archon Staff"
+  }
+]

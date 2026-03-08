@@ -1,11 +1,11 @@
 {
-  "light_plated_boots": "boots/light_plated_boots.png",
-  "worldstone_shard": "material/worldstone_shard.png",
-  "ohm_rune": "rune/ohm_rune.png",
-  "ring": "jewelry/ring.png",
-  "amulet": "jewelry/amulet.png",
-  "jewel": "jewel/jewel.png",
-  "small_charm": "charm/small_charm.png",
-  "large_charm": "charm/large_charm.png",
-  "grand_charm": "charm/grand_charm.png"
+  "light_plated_boots": "generic/item_unknown.svg",
+  "worldstone_shard": "maps/Worldstone_Shard.webp",
+  "ohm_rune": "rune/RuneOhm.webp",
+  "ring": "rings/Ring_1.webp",
+  "amulet": "amulets/Amulet_1.webp",
+  "jewel": "charms_jewels/Jewel_blue.webp",
+  "small_charm": "charms_jewels/Grand_Charm_2.webp",
+  "large_charm": "charms_jewels/Grand_Charm_2.webp",
+  "grand_charm": "charms_jewels/Grand_Charm_2.webp"
 }

@@ -79,20 +79,59 @@ function isJsonCandidate(text: string): boolean {
   return text.startsWith('{') && text.endsWith('}')
 }
 
-function isPd2ItemCandidate(parsed: unknown): parsed is { type: string } {
+function extractJsonCandidate(text: string): string | null {
+  const trimmed = text.trim()
+  if (isJsonCandidate(trimmed)) {
+    return trimmed
+  }
+
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+  if (fenceMatch?.[1]) {
+    const fenced = fenceMatch[1].trim()
+    if (isJsonCandidate(fenced)) {
+      return fenced
+    }
+  }
+
+  const firstBrace = trimmed.indexOf('{')
+  const lastBrace = trimmed.lastIndexOf('}')
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const sliced = trimmed.slice(firstBrace, lastBrace + 1).trim()
+    if (isJsonCandidate(sliced)) {
+      return sliced
+    }
+  }
+
+  return null
+}
+
+function unwrapItemCandidate(parsed: unknown): unknown {
   if (!parsed || typeof parsed !== 'object') {
+    return parsed
+  }
+
+  if ('item' in parsed) {
+    return (parsed as { item?: unknown }).item
+  }
+
+  return parsed
+}
+
+function isPd2ItemCandidate(parsed: unknown): parsed is { type: string } {
+  const candidate = unwrapItemCandidate(parsed)
+  if (!candidate || typeof candidate !== 'object') {
     return false
   }
-  const maybeItem = parsed as { type?: unknown }
+  const maybeItem = candidate as { type?: unknown }
   return typeof maybeItem.type === 'string' && maybeItem.type.trim().length > 0
 }
 
 function isStrongPd2ItemCandidate(parsed: unknown): parsed is { type: string; quality: string; location: string } {
-  if (!parsed || typeof parsed !== 'object') {
+  const candidate = unwrapItemCandidate(parsed)
+  if (!candidate || typeof candidate !== 'object') {
     return false
   }
-
-  const maybeItem = parsed as { type?: unknown; quality?: unknown; location?: unknown }
+  const maybeItem = candidate as { type?: unknown; quality?: unknown; location?: unknown }
   return (
     typeof maybeItem.type === 'string' &&
     maybeItem.type.trim().length > 0 &&
@@ -118,14 +157,15 @@ export function startClipboardMonitor(
         return
       }
 
-      if (!isJsonCandidate(current)) {
+      const jsonPayload = extractJsonCandidate(current)
+      if (!jsonPayload) {
         lastValue = current
         return
       }
 
       let parsed: unknown
       try {
-        parsed = JSON.parse(current) as unknown
+        parsed = JSON.parse(jsonPayload) as unknown
       } catch {
         if (isDev) {
           console.log('[clipboard] invalid json ignored')
@@ -155,7 +195,7 @@ export function startClipboardMonitor(
       }
 
       try {
-        const result = captureHandler(current)
+        const result = captureHandler(jsonPayload)
         lastValue = current
         if (isDev && result.inserted) {
           console.log('[clipboard] new item captured')

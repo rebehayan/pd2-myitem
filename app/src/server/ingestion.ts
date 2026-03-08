@@ -8,9 +8,11 @@ import type { SaveParsedItemResult } from './repository'
 
 const statSchema = z.object({
   name: z.string().min(1),
-  value: z.number(),
+  value: z.number().optional(),
   stat_id: z.number().int().optional(),
   corrupted: z.number().int().optional(),
+  chance: z.number().int().optional(),
+  level: z.number().int().optional(),
   range: z
     .object({
       min: z.number(),
@@ -89,7 +91,7 @@ function normalizeItem(item: RawClipboardItem, rawJson: string, parsedSource: un
     ],
     stats: safeStats.map((stat) => ({
       statName: stat.name,
-      statValue: stat.value,
+      statValue: stat.value ?? null,
       rangeMin: stat.range?.min ?? null,
       rangeMax: stat.range?.max ?? null,
       statId: stat.stat_id ?? null,
@@ -102,7 +104,16 @@ function normalizeItem(item: RawClipboardItem, rawJson: string, parsedSource: un
 
 export function ingestClipboardJson(rawJson: string): SaveParsedItemResult {
   const parsedUnknown = JSON.parse(rawJson) as unknown
-  const parsedItem = itemSchema.parse(parsedUnknown)
+  const parsedItemResult = itemSchema.safeParse(parsedUnknown)
+  let parsedItem: RawClipboardItem
+
+  if (parsedItemResult.success) {
+    parsedItem = parsedItemResult.data
+  } else if (parsedUnknown && typeof parsedUnknown === 'object' && 'item' in parsedUnknown) {
+    parsedItem = itemSchema.parse((parsedUnknown as { item?: unknown }).item)
+  } else {
+    throw parsedItemResult.error
+  }
   const normalized = normalizeItem(parsedItem, rawJson, parsedUnknown)
   return saveParsedItem(normalized)
 }

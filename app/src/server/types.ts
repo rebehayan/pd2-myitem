@@ -11,9 +11,11 @@ export type AnalysisProfile =
 
 export interface RawItemStat {
   name: string
-  value: number
+  value?: number
   stat_id?: number
   corrupted?: number
+  chance?: number
+  level?: number
   range?: {
     min: number
     max: number
@@ -48,7 +50,7 @@ export interface ParsedItem {
   analysisTags: string[]
   stats: {
     statName: string
-    statValue: number
+    statValue: number | null
     rangeMin: number | null
     rangeMax: number | null
     statId: number | null

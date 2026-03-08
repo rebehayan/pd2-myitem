@@ -1,0 +1,11 @@
+{
+  "name": "pd2-myitem-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix app run dev",
+    "build": "npm --prefix app run build",
+    "typecheck": "npm --prefix app run typecheck",
+    "lint": "npm --prefix app run lint",
+    "preview": "npm --prefix app run preview"
+  }
+}

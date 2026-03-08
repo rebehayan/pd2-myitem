@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "rune-high",
+      "label": "High Rune",
+      "priority": 120,
+      "theme": "rune-high",
+      "match": {
+        "categories": ["rune"],
+        "nameIncludes": ["zod", "cham", "jah", "ber", "sur", "lo", "ohm", "vex", "gul"]
+      }
+    },
+    {
+      "id": "rune-mid",
+      "label": "Mid Rune",
+      "priority": 110,
+      "theme": "rune-mid",
+      "match": {
+        "categories": ["rune"],
+        "nameIncludes": ["ist", "mal", "um", "pul", "lem", "fal", "ko", "lum"]
+      }
+    },
+    {
+      "id": "uber-material",
+      "label": "Uber Material",
+      "priority": 105,
+      "theme": "uber-mats",
+      "match": {
+        "categories": ["material", "quest"],
+        "nameIncludes": ["key", "organ", "essence", "relic", "token", "diablo", "mephisto", "baal"]
+      }
+    },
+    {
+      "id": "high-ed",
+      "label": "High ED",
+      "priority": 100,
+      "theme": "high-ed",
+      "match": {
+        "statIncludes": ["enhanced damage"]
+      }
+    },
+    {
+      "id": "skill-focus",
+      "label": "Skill Focus",
+      "priority": 95,
+      "theme": "skill-focus",
+      "match": {
+        "statIncludes": ["skill", "skills", "+ to all skills"]
+      }
+    },
+    {
+      "id": "unique-corrupted",
+      "label": "Corrupted Unique",
+      "priority": 90,
+      "theme": "unique-corrupted",
+      "match": {
+        "qualities": ["unique"],
+        "corrupted": true
+      }
+    },
+    {
+      "id": "unique",
+      "label": "Unique",
+      "priority": 80,
+      "theme": "unique",
+      "match": {
+        "qualities": ["unique"]
+      }
+    },
+    {
+      "id": "set",
+      "label": "Set",
+      "priority": 70,
+      "theme": "set",
+      "match": {
+        "qualities": ["set"]
+      }
+    },
+    {
+      "id": "rare",
+      "label": "Rare",
+      "priority": 60,
+      "theme": "rare",
+      "match": {
+        "qualities": ["rare"]
+      }
+    },
+    {
+      "id": "magic",
+      "label": "Magic",
+      "priority": 50,
+      "theme": "magic",
+      "match": {
+        "qualities": ["magic"]
+      }
+    },
+    {
+      "id": "charm",
+      "label": "Charm",
+      "priority": 45,
+      "theme": "charm",
+      "match": {
+        "categories": ["charm"]
+      }
+    },
+    {
+      "id": "jewel",
+      "label": "Jewel",
+      "priority": 44,
+      "theme": "jewel",
+      "match": {
+        "categories": ["jewel", "gem"]
+      }
+    },
+    {
+      "id": "map",
+      "label": "Map",
+      "priority": 43,
+      "theme": "map",
+      "match": {
+        "categories": ["map"]
+      }
+    },
+    {
+      "id": "rune",
+      "label": "Rune",
+      "priority": 40,
+      "theme": "rune",
+      "match": {
+        "categories": ["rune"]
+      }
+    },
+    {
+      "id": "material",
+      "label": "Material",
+      "priority": 35,
+      "theme": "material",
+      "match": {
+        "categories": ["material"]
+      }
+    },
+    {
+      "id": "default",
+      "label": "Common",
+      "priority": 0,
+      "theme": "default",
+      "match": {}
+    }
+  ]
+}

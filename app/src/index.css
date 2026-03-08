@@ -1,13 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
+
+@font-face {
+  font-family: "Exocet";
+  src: url("./assets/fonts/Exocet-Regular.woff2") format("woff2"),
+    url("./assets/fonts/Exocet-Regular.woff") format("woff"),
+    url("./assets/fonts/Exocet-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Exocet";
+  src: url("./assets/fonts/Exocet-SemiBold.woff2") format("woff2"),
+    url("./assets/fonts/Exocet-SemiBold.woff") format("woff"),
+    url("./assets/fonts/Exocet-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Exocet";
+  src: url("./assets/fonts/Exocet-Bold.woff2") format("woff2"),
+    url("./assets/fonts/Exocet-Bold.woff") format("woff"),
+    url("./assets/fonts/Exocet-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+  font-family: "Exocet", "Noto Sans", "Noto Sans KR", "Segoe UI", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: #111827;
-  background: linear-gradient(180deg, #f7fafc 0%, #edf2f7 100%);
+  color: var(--d2-ash-1);
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 60%),
+    linear-gradient(180deg, var(--d2-stone-0), var(--d2-stone-2));
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --d2-font-display: "Exocet", "Noto Sans", "Noto Sans KR", "Segoe UI", sans-serif;
+  --d2-font-body: "Exocet", "Noto Sans", "Noto Sans KR", "Segoe UI", sans-serif;
+  --d2-gold-0: #f7e6a8;
+  --d2-gold-1: #e5c874;
+  --d2-gold-2: #b98b2c;
+  --d2-gold-3: #7c5611;
+  --d2-stone-0: #0b0c0f;
+  --d2-stone-1: #141316;
+  --d2-stone-2: #1c1a1a;
+  --d2-stone-3: #26221f;
+  --d2-stone-4: #2f2a27;
+  --d2-ash-0: #9c9587;
+  --d2-ash-1: #c3b7a0;
+  --d2-crimson-0: #a21b1b;
+  --d2-crimson-1: #6d1212;
+  --d2-ember-0: #e0662a;
+  --d2-ember-1: #8a2d12;
+  --d2-shadow-strong: 0 18px 36px rgba(3, 3, 5, 0.65);
+  --d2-shadow-soft: 0 8px 16px rgba(6, 6, 8, 0.55);
+  --d2-glow-gold: 0 0 12px rgba(229, 200, 116, 0.35);
+  --d2-border-gold: linear-gradient(145deg, var(--d2-gold-0), var(--d2-gold-2));
 }
 
 * {
@@ -17,6 +71,9 @@
 body {
   margin: 0;
   min-width: 320px;
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 60%),
+    linear-gradient(180deg, var(--d2-stone-0), var(--d2-stone-2));
+  color: var(--d2-ash-1);
 }
 
 a {

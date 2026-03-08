@@ -158,6 +158,37 @@ function mapSummaryRow(row: ItemSummaryRow) {
   }
 }
 
+interface KeyStatRow {
+  stat_name: string
+  stat_value: number | null
+  range_min: number | null
+  range_max: number | null
+}
+
+function formatKeyStat(row: KeyStatRow): string {
+  const base = row.stat_value === null ? row.stat_name : `${row.stat_name} ${row.stat_value}`
+  if (row.range_min === null || row.range_max === null) {
+    return base
+  }
+  return `${base} [${row.range_min}-${row.range_max}]`
+}
+
+function getKeyStatsForItem(itemId: string, limit = 3): string[] {
+  const rows = db
+    .prepare<{ item_id: string; limit: number }, KeyStatRow>(
+      `SELECT stat_name, stat_value, range_min, range_max
+       FROM item_stats
+       WHERE item_id = @item_id
+         AND range_min IS NOT NULL
+         AND range_max IS NOT NULL
+       ORDER BY rowid ASC
+       LIMIT @limit`,
+    )
+    .all({ item_id: itemId, limit })
+
+  return rows.map(formatKeyStat)
+}
+
 export function getRecentItems(limit = 20) {
   const rows = db
     .prepare<{ limit: number }, ItemSummaryRow>(
@@ -187,7 +218,10 @@ export function getTodayItems() {
 }
 
 export function getOverlayItems(limit = 10) {
-  return getRecentItems(limit)
+  return getRecentItems(limit).map((item) => ({
+    ...item,
+    keyStats: getKeyStatsForItem(item.id),
+  }))
 }
 
 interface TodayStatsRow {
@@ -241,7 +275,7 @@ interface ItemRow {
 
 interface StatRow {
   stat_name: string
-  stat_value: number
+  stat_value: number | null
   range_min: number | null
   range_max: number | null
   corrupted: number

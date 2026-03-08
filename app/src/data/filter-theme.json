@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "themes": {
+    "rune-high": {
+      "name": "High Rune",
+      "accent": "#f1a24b",
+      "text": "#ffe1bf",
+      "border": "rgba(241, 162, 75, 0.75)",
+      "background": "linear-gradient(135deg, rgba(82, 46, 14, 0.92), rgba(20, 16, 10, 0.92))",
+      "badgeBg": "rgba(241, 162, 75, 0.92)",
+      "badgeText": "#2b1506",
+      "glow": "0 0 14px rgba(241, 162, 75, 0.38)"
+    },
+    "rune-mid": {
+      "name": "Mid Rune",
+      "accent": "#e8923f",
+      "text": "#ffd9b2",
+      "border": "rgba(232, 146, 63, 0.7)",
+      "background": "linear-gradient(135deg, rgba(74, 40, 16, 0.92), rgba(20, 16, 10, 0.92))",
+      "badgeBg": "rgba(232, 146, 63, 0.9)",
+      "badgeText": "#2b1506",
+      "glow": "0 0 12px rgba(232, 146, 63, 0.35)"
+    },
+    "uber-mats": {
+      "name": "Uber Material",
+      "accent": "#f19a3e",
+      "text": "#ffe0ba",
+      "border": "rgba(241, 154, 62, 0.75)",
+      "background": "linear-gradient(135deg, rgba(86, 36, 16, 0.92), rgba(20, 12, 10, 0.92))",
+      "badgeBg": "rgba(241, 154, 62, 0.92)",
+      "badgeText": "#2b1406",
+      "glow": "0 0 14px rgba(241, 154, 62, 0.35)"
+    },
+    "high-ed": {
+      "name": "High ED",
+      "accent": "#b07adf",
+      "text": "#f0dcff",
+      "border": "rgba(176, 122, 223, 0.7)",
+      "background": "linear-gradient(135deg, rgba(52, 30, 74, 0.92), rgba(18, 12, 20, 0.92))",
+      "badgeBg": "rgba(176, 122, 223, 0.9)",
+      "badgeText": "#1f0b2b",
+      "glow": "0 0 12px rgba(176, 122, 223, 0.35)"
+    },
+    "skill-focus": {
+      "name": "Skill Focus",
+      "accent": "#4db7b0",
+      "text": "#dbfffb",
+      "border": "rgba(77, 183, 176, 0.7)",
+      "background": "linear-gradient(135deg, rgba(18, 52, 56, 0.92), rgba(12, 18, 20, 0.92))",
+      "badgeBg": "rgba(77, 183, 176, 0.9)",
+      "badgeText": "#06221f",
+      "glow": "0 0 14px rgba(77, 183, 176, 0.35)"
+    },
+    "unique-corrupted": {
+      "name": "Corrupted Unique",
+      "accent": "#d35a4a",
+      "text": "#ffd9d4",
+      "border": "rgba(211, 90, 74, 0.75)",
+      "background": "linear-gradient(135deg, rgba(70, 20, 18, 0.92), rgba(20, 10, 10, 0.92))",
+      "badgeBg": "rgba(211, 90, 74, 0.9)",
+      "badgeText": "#2b0e0b",
+      "glow": "0 0 14px rgba(211, 90, 74, 0.4)"
+    },
+    "unique": {
+      "name": "Unique",
+      "accent": "#d5a64a",
+      "text": "#ffe8b5",
+      "border": "rgba(213, 166, 74, 0.7)",
+      "background": "linear-gradient(135deg, rgba(66, 38, 12, 0.92), rgba(20, 15, 10, 0.92))",
+      "badgeBg": "rgba(213, 166, 74, 0.9)",
+      "badgeText": "#2b1706",
+      "glow": "0 0 12px rgba(213, 166, 74, 0.35)"
+    },
+    "set": {
+      "name": "Set",
+      "accent": "#4bbf69",
+      "text": "#def7e4",
+      "border": "rgba(75, 191, 105, 0.7)",
+      "background": "linear-gradient(135deg, rgba(18, 58, 30, 0.92), rgba(12, 18, 12, 0.92))",
+      "badgeBg": "rgba(75, 191, 105, 0.9)",
+      "badgeText": "#06200a",
+      "glow": "0 0 12px rgba(75, 191, 105, 0.35)"
+    },
+    "rare": {
+      "name": "Rare",
+      "accent": "#f2dd6b",
+      "text": "#fff6c8",
+      "border": "rgba(242, 221, 107, 0.7)",
+      "background": "linear-gradient(135deg, rgba(66, 50, 14, 0.92), rgba(20, 16, 10, 0.92))",
+      "badgeBg": "rgba(242, 221, 107, 0.9)",
+      "badgeText": "#2b1b06",
+      "glow": "0 0 12px rgba(242, 221, 107, 0.35)"
+    },
+    "magic": {
+      "name": "Magic",
+      "accent": "#6d87ff",
+      "text": "#e3e9ff",
+      "border": "rgba(109, 135, 255, 0.7)",
+      "background": "linear-gradient(135deg, rgba(18, 28, 70, 0.92), rgba(12, 14, 20, 0.92))",
+      "badgeBg": "rgba(109, 135, 255, 0.9)",
+      "badgeText": "#0c1630",
+      "glow": "0 0 12px rgba(109, 135, 255, 0.35)"
+    },
+    "charm": {
+      "name": "Charm",
+      "accent": "#6d87ff",
+      "text": "#e3e9ff",
+      "border": "rgba(109, 135, 255, 0.7)",
+      "background": "linear-gradient(135deg, rgba(18, 28, 70, 0.92), rgba(12, 14, 20, 0.92))",
+      "badgeBg": "rgba(109, 135, 255, 0.9)",
+      "badgeText": "#0c1630",
+      "glow": "0 0 12px rgba(109, 135, 255, 0.35)"
+    },
+    "jewel": {
+      "name": "Jewel",
+      "accent": "#f2dd6b",
+      "text": "#fff6c8",
+      "border": "rgba(242, 221, 107, 0.7)",
+      "background": "linear-gradient(135deg, rgba(66, 50, 14, 0.92), rgba(20, 16, 10, 0.92))",
+      "badgeBg": "rgba(242, 221, 107, 0.9)",
+      "badgeText": "#2b1b06",
+      "glow": "0 0 12px rgba(242, 221, 107, 0.35)"
+    },
+    "map": {
+      "name": "Map",
+      "accent": "#f1a24b",
+      "text": "#ffe1bf",
+      "border": "rgba(241, 162, 75, 0.7)",
+      "background": "linear-gradient(135deg, rgba(82, 46, 14, 0.92), rgba(20, 16, 10, 0.92))",
+      "badgeBg": "rgba(241, 162, 75, 0.9)",
+      "badgeText": "#2b1506",
+      "glow": "0 0 12px rgba(241, 162, 75, 0.35)"
+    },
+    "rune": {
+      "name": "Rune",
+      "accent": "#f1a24b",
+      "text": "#ffe1bf",
+      "border": "rgba(241, 162, 75, 0.65)",
+      "background": "linear-gradient(135deg, rgba(82, 46, 14, 0.92), rgba(20, 16, 10, 0.92))",
+      "badgeBg": "rgba(241, 162, 75, 0.85)",
+      "badgeText": "#2b1506",
+      "glow": "0 0 10px rgba(241, 162, 75, 0.3)"
+    },
+    "material": {
+      "name": "Material",
+      "accent": "#c7a87a",
+      "text": "#f2e6d2",
+      "border": "rgba(199, 168, 122, 0.65)",
+      "background": "linear-gradient(135deg, rgba(58, 42, 22, 0.92), rgba(20, 16, 12, 0.92))",
+      "badgeBg": "rgba(199, 168, 122, 0.85)",
+      "badgeText": "#24170c",
+      "glow": "0 0 10px rgba(199, 168, 122, 0.3)"
+    },
+    "default": {
+      "name": "Common",
+      "accent": "#b7b0a3",
+      "text": "#f1ede3",
+      "border": "rgba(183, 176, 163, 0.55)",
+      "background": "linear-gradient(135deg, rgba(30, 28, 26, 0.92), rgba(16, 14, 14, 0.92))",
+      "badgeBg": "rgba(183, 176, 163, 0.8)",
+      "badgeText": "#1f1a12",
+      "glow": "0 0 8px rgba(183, 176, 163, 0.25)"
+    }
+  }
+}

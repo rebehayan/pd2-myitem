@@ -1,0 +1,375 @@
+[
+  {
+    "family": "cap",
+    "category": "armor",
+    "subtype": "helm",
+    "normal": "Cap",
+    "exceptional": "War Hat",
+    "elite": "Shako"
+  },
+  {
+    "family": "skull_cap",
+    "category": "armor",
+    "subtype": "helm",
+    "normal": "Skull Cap",
+    "exceptional": "Sallet",
+    "elite": "Hydraskull"
+  },
+  {
+    "family": "helm",
+    "category": "armor",
+    "subtype": "helm",
+    "normal": "Helm",
+    "exceptional": "Casque",
+    "elite": "Armet"
+  },
+  {
+    "family": "full_helm",
+    "category": "armor",
+    "subtype": "helm",
+    "normal": "Full Helm",
+    "exceptional": "Basinet",
+    "elite": "Giant Conch"
+  },
+  {
+    "family": "great_helm",
+    "category": "armor",
+    "subtype": "helm",
+    "normal": "Great Helm",
+    "exceptional": "Winged Helm",
+    "elite": "Spired Helm"
+  },
+  {
+    "family": "crown",
+    "category": "armor",
+    "subtype": "helm",
+    "normal": "Crown",
+    "exceptional": "Grand Crown",
+    "elite": "Corona"
+  },
+  {
+    "family": "mask",
+    "category": "armor",
+    "subtype": "helm",
+    "normal": "Mask",
+    "exceptional": "Death Mask",
+    "elite": "Demonhead"
+  },
+  {
+    "family": "bone_helm",
+    "category": "armor",
+    "subtype": "helm",
+    "normal": "Bone Helm",
+    "exceptional": "Grim Helm",
+    "elite": "Bone Visage"
+  },
+
+  {
+    "family": "quilted_armor",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Quilted Armor",
+    "exceptional": "Ghost Armor",
+    "elite": "Dusk Shroud"
+  },
+  {
+    "family": "leather_armor",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Leather Armor",
+    "exceptional": "Serpentskin Armor",
+    "elite": "Wyrmhide"
+  },
+  {
+    "family": "hard_leather_armor",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Hard Leather Armor",
+    "exceptional": "Demonhide Armor",
+    "elite": "Scarab Husk"
+  },
+  {
+    "family": "studded_leather",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Studded Leather",
+    "exceptional": "Trellised Armor",
+    "elite": "Wire Fleece"
+  },
+  {
+    "family": "ring_mail",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Ring Mail",
+    "exceptional": "Linked Mail",
+    "elite": "Diamond Mail"
+  },
+  {
+    "family": "scale_mail",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Scale Mail",
+    "exceptional": "Tigulated Mail",
+    "elite": "Loricated Mail"
+  },
+  {
+    "family": "chain_mail",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Chain Mail",
+    "exceptional": "Mesh Armor",
+    "elite": "Boneweave"
+  },
+  {
+    "family": "breast_plate",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Breast Plate",
+    "exceptional": "Cuirass",
+    "elite": "Great Hauberk"
+  },
+  {
+    "family": "splint_mail",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Splint Mail",
+    "exceptional": "Russet Armor",
+    "elite": "Balrog Skin"
+  },
+  {
+    "family": "plate_mail",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Plate Mail",
+    "exceptional": "Templar Coat",
+    "elite": "Hellforge Plate"
+  },
+  {
+    "family": "field_plate",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Field Plate",
+    "exceptional": "Sharktooth Armor",
+    "elite": "Kraken Shell"
+  },
+  {
+    "family": "gothic_plate",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Gothic Plate",
+    "exceptional": "Embossed Plate",
+    "elite": "Lacquered Plate"
+  },
+  {
+    "family": "full_plate_mail",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Full Plate Mail",
+    "exceptional": "Chaos Armor",
+    "elite": "Shadow Plate"
+  },
+  {
+    "family": "ancient_armor",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Ancient Armor",
+    "exceptional": "Ornate Plate",
+    "elite": "Sacred Armor"
+  },
+  {
+    "family": "light_plate",
+    "category": "armor",
+    "subtype": "body_armor",
+    "normal": "Light Plate",
+    "exceptional": "Mage Plate",
+    "elite": "Archon Plate"
+  },
+
+  {
+    "family": "buckler",
+    "category": "armor",
+    "subtype": "shield",
+    "normal": "Buckler",
+    "exceptional": "Defender",
+    "elite": "Heater"
+  },
+  {
+    "family": "small_shield",
+    "category": "armor",
+    "subtype": "shield",
+    "normal": "Small Shield",
+    "exceptional": "Round Shield",
+    "elite": "Luna"
+  },
+  {
+    "family": "large_shield",
+    "category": "armor",
+    "subtype": "shield",
+    "normal": "Large Shield",
+    "exceptional": "Scutum",
+    "elite": "Hyperion"
+  },
+  {
+    "family": "kite_shield",
+    "category": "armor",
+    "subtype": "shield",
+    "normal": "Kite Shield",
+    "exceptional": "Dragon Shield",
+    "elite": "Monarch"
+  },
+  {
+    "family": "spiked_shield",
+    "category": "armor",
+    "subtype": "shield",
+    "normal": "Spiked Shield",
+    "exceptional": "Barbed Shield",
+    "elite": "Blade Barrier"
+  },
+  {
+    "family": "bone_shield",
+    "category": "armor",
+    "subtype": "shield",
+    "normal": "Bone Shield",
+    "exceptional": "Grim Shield",
+    "elite": "Troll Nest"
+  },
+  {
+    "family": "tower_shield",
+    "category": "armor",
+    "subtype": "shield",
+    "normal": "Tower Shield",
+    "exceptional": "Pavise",
+    "elite": "Aegis"
+  },
+  {
+    "family": "gothic_shield",
+    "category": "armor",
+    "subtype": "shield",
+    "normal": "Gothic Shield",
+    "exceptional": "Ancient Shield",
+    "elite": "Ward"
+  },
+
+  {
+    "family": "leather_gloves",
+    "category": "armor",
+    "subtype": "gloves",
+    "normal": "Leather Gloves",
+    "exceptional": "Demonhide Gloves",
+    "elite": "Bramble Mitts"
+  },
+  {
+    "family": "heavy_gloves",
+    "category": "armor",
+    "subtype": "gloves",
+    "normal": "Heavy Gloves",
+    "exceptional": "Sharkskin Gloves",
+    "elite": "Vampirebone Gloves"
+  },
+  {
+    "family": "chain_gloves",
+    "category": "armor",
+    "subtype": "gloves",
+    "normal": "Chain Gloves",
+    "exceptional": "Heavy Bracers",
+    "elite": "Vambraces"
+  },
+  {
+    "family": "light_gauntlets",
+    "category": "armor",
+    "subtype": "gloves",
+    "normal": "Light Gauntlets",
+    "exceptional": "Battle Gauntlets",
+    "elite": "Crusader Gauntlets"
+  },
+  {
+    "family": "gauntlets",
+    "category": "armor",
+    "subtype": "gloves",
+    "normal": "Gauntlets",
+    "exceptional": "War Gauntlets",
+    "elite": "Ogre Gauntlets"
+  },
+
+  {
+    "family": "boots",
+    "category": "armor",
+    "subtype": "boots",
+    "normal": "Boots",
+    "exceptional": "Demonhide Boots",
+    "elite": "Wyrmhide Boots"
+  },
+  {
+    "family": "heavy_boots",
+    "category": "armor",
+    "subtype": "boots",
+    "normal": "Heavy Boots",
+    "exceptional": "Sharkskin Boots",
+    "elite": "Scarabshell Boots"
+  },
+  {
+    "family": "chain_boots",
+    "category": "armor",
+    "subtype": "boots",
+    "normal": "Chain Boots",
+    "exceptional": "Mesh Boots",
+    "elite": "Boneweave Boots"
+  },
+  {
+    "family": "light_plated_boots",
+    "category": "armor",
+    "subtype": "boots",
+    "normal": "Light Plated Boots",
+    "exceptional": "Battle Boots",
+    "elite": "Mirrored Boots"
+  },
+  {
+    "family": "greaves",
+    "category": "armor",
+    "subtype": "boots",
+    "normal": "Greaves",
+    "exceptional": "War Boots",
+    "elite": "Myrmidon Greaves"
+  },
+
+  {
+    "family": "sash",
+    "category": "armor",
+    "subtype": "belt",
+    "normal": "Sash",
+    "exceptional": "Demonhide Sash",
+    "elite": "Spiderweb Sash"
+  },
+  {
+    "family": "light_belt",
+    "category": "armor",
+    "subtype": "belt",
+    "normal": "Light Belt",
+    "exceptional": "Sharkskin Belt",
+    "elite": "Vampirefang Belt"
+  },
+  {
+    "family": "belt",
+    "category": "armor",
+    "subtype": "belt",
+    "normal": "Belt",
+    "exceptional": "Mesh Belt",
+    "elite": "Mithril Coil"
+  },
+  {
+    "family": "heavy_belt",
+    "category": "armor",
+    "subtype": "belt",
+    "normal": "Heavy Belt",
+    "exceptional": "Battle Belt",
+    "elite": "Troll Belt"
+  },
+  {
+    "family": "plated_belt",
+    "category": "armor",
+    "subtype": "belt",
+    "normal": "Plated Belt",
+    "exceptional": "War Belt",
+    "elite": "Colossus Girdle"
+  }
+]
