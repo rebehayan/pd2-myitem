@@ -96,6 +96,15 @@
       }
     },
     {
+      "id": "crafted",
+      "label": "Crafted",
+      "priority": 49,
+      "theme": "crafted",
+      "match": {
+        "qualities": ["crafted", "craft"]
+      }
+    },
+    {
       "id": "charm",
       "label": "Charm",
       "priority": 45,
@@ -138,6 +147,25 @@
       "theme": "material",
       "match": {
         "categories": ["material"]
+      }
+    },
+    {
+      "id": "normal-gray",
+      "label": "Normal (Socketed/Ethereal)",
+      "priority": 34,
+      "theme": "normal-gray",
+      "match": {
+        "qualities": ["normal"],
+        "tagsAny": ["ethereal", "socketed"]
+      }
+    },
+    {
+      "id": "normal-white",
+      "label": "Normal",
+      "priority": 33,
+      "theme": "normal-white",
+      "match": {
+        "qualities": ["normal"]
       }
     },
     {

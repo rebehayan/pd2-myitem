@@ -126,26 +126,57 @@ function isPd2ItemCandidate(parsed: unknown): parsed is { type: string } {
   return typeof maybeItem.type === 'string' && maybeItem.type.trim().length > 0
 }
 
-function isStrongPd2ItemCandidate(parsed: unknown): parsed is { type: string; quality: string; location: string } {
+function isStrongPd2ItemCandidate(parsed: unknown): boolean {
   const candidate = unwrapItemCandidate(parsed)
   if (!candidate || typeof candidate !== 'object') {
     return false
   }
-  const maybeItem = candidate as { type?: unknown; quality?: unknown; location?: unknown }
+
+  const maybeItem = candidate as {
+    type?: unknown
+    quality?: unknown
+    location?: unknown
+    iLevel?: unknown
+    quantity?: unknown
+    defense?: unknown
+    stats?: unknown
+    name?: unknown
+  }
+
+  const hasType = typeof maybeItem.type === 'string' && maybeItem.type.trim().length > 0
+  if (!hasType) {
+    return false
+  }
+
+  const hasQuality = typeof maybeItem.quality === 'string' && maybeItem.quality.trim().length > 0
+  const hasLocation = typeof maybeItem.location === 'string' && maybeItem.location.trim().length > 0
+  const hasILevel = typeof maybeItem.iLevel === 'number'
+  const hasQuantity = typeof maybeItem.quantity === 'number'
+  const hasDefense = typeof maybeItem.defense === 'number'
+  const hasStats = Array.isArray(maybeItem.stats)
+  const hasName = typeof maybeItem.name === 'string' && maybeItem.name.trim().length > 0
+
   return (
-    typeof maybeItem.type === 'string' &&
-    maybeItem.type.trim().length > 0 &&
-    typeof maybeItem.quality === 'string' &&
-    maybeItem.quality.trim().length > 0 &&
-    typeof maybeItem.location === 'string' &&
-    maybeItem.location.trim().length > 0
+    hasQuality ||
+    hasLocation ||
+    hasILevel ||
+    hasQuantity ||
+    hasDefense ||
+    hasStats ||
+    hasName
   )
 }
 
 export function startClipboardMonitor(
-  captureHandler: (payload: string) => { inserted: boolean; id: string | null } = captureClipboardPayload,
+  captureHandler: (payload: string) => Promise<{ inserted: boolean; id: string | null }> = captureClipboardPayload,
 ) {
   let lastValue = ''
+
+  if (isDev) {
+    console.log(
+      `[clipboard] monitor started (poll=${pollIntervalMs}ms, process_gate=${processGateEnabled ? 'on' : 'off'})`,
+    )
+  }
 
   const timer = setInterval(async () => {
     try {
@@ -194,19 +225,19 @@ export function startClipboardMonitor(
         console.log('[clipboard] process gate bypassed by strong PD2 item payload')
       }
 
-      try {
-        const result = captureHandler(jsonPayload)
-        lastValue = current
-        if (isDev && result.inserted) {
-          console.log('[clipboard] new item captured')
-        }
-        if (isDev && !result.inserted) {
-          console.log('[clipboard] duplicate ignored')
-        }
-      } catch (error) {
-        if (isDev) {
-          console.error('[clipboard] ingest failed', error)
-        }
+        try {
+          const result = await captureHandler(jsonPayload)
+          lastValue = current
+          if (isDev && result.inserted) {
+            console.log('[clipboard] new item captured')
+          }
+          if (isDev && !result.inserted) {
+            console.log('[clipboard] duplicate ignored')
+          }
+        } catch (error) {
+          if (isDev) {
+            console.error('[clipboard] ingest failed', error)
+          }
       }
     } catch (error) {
       if (isDev) {

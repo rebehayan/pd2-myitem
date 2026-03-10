@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { ApiError, deleteItem, fetchTodayItems, fetchTodayPublicData, fetchTodayStats } from '../lib/api'
+import { ApiError, deleteItem, fetchCalendarMonth, fetchItemsByDate, fetchTodayPublicData } from '../lib/api'
+import { getItemVisualState } from '../lib/item-visual-state'
 import type { ItemSummary } from '../lib/types'
 import type { TodayPublicItem, TodayStats } from '../lib/types'
 import { useItemCaptureRefresh } from '../lib/use-item-capture-refresh'
@@ -53,12 +54,56 @@ function normalizeQuality(raw: string): string {
   return raw.trim().toLowerCase()
 }
 
+function formatLocalDate(value: string | Date): string {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function formatMonth(value: string): string {
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    return value
+  }
+  return formatLocalDate(value).slice(0, 7)
+}
+
+function shiftMonth(month: string, delta: number): string {
+  const base = new Date(`${month}-01T00:00:00`)
+  base.setMonth(base.getMonth() + delta)
+  const year = base.getFullYear()
+  const nextMonth = `${base.getMonth() + 1}`.padStart(2, '0')
+  return `${year}-${nextMonth}`
+}
+
+function getStatsFromItems(source: TodayCardItem[]): TodayStats {
+  const totalItems = source.length
+  const uniqueItems = source.filter((row) => row.quality?.toLowerCase() === 'unique').length
+  const runes = source.filter((row) => row.category === 'rune').length
+  const materials = source.filter((row) => row.category === 'material').length
+  return {
+    totalItems,
+    uniqueItems,
+    runes,
+    materials,
+  }
+}
+
 export function TodayPage() {
   const location = useLocation()
   const [items, setItems] = useState<TodayCardItem[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [stats, setStats] = useState<TodayStats | null>(null)
-  const [pageDate, setPageDate] = useState<string>(new Date().toISOString().slice(0, 10))
+  const todayDate = useMemo(() => formatLocalDate(new Date()), [])
+  const [selectedDate, setSelectedDate] = useState<string>(todayDate)
+  const [pageDate, setPageDate] = useState<string>(todayDate)
+  const [calendarMonth, setCalendarMonth] = useState<string>(formatMonth(todayDate))
+  const [calendarCounts, setCalendarCounts] = useState<Record<string, number>>({})
+  const [calendarError, setCalendarError] = useState<string | null>(null)
   const [qualityFilter, setQualityFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +118,31 @@ export function TodayPage() {
     const raw = params.get('key') ?? params.get('token') ?? ''
     return raw.trim()
   }, [location.search])
+  const isSharedView = key.length > 0
+
+  const loadCalendar = useCallback(async () => {
+    if (key) {
+      return
+    }
+    try {
+      setCalendarError(null)
+      const results = await fetchCalendarMonth(calendarMonth)
+      if (!mountedRef.current) {
+        return
+      }
+      const next: Record<string, number> = {}
+      for (const entry of results) {
+        next[entry.date] = entry.count
+      }
+      setCalendarCounts(next)
+    } catch (err: unknown) {
+      if (!mountedRef.current) {
+        return
+      }
+      setCalendarError(err instanceof Error ? err.message : 'Failed to load calendar.')
+      setCalendarCounts({})
+    }
+  }, [calendarMonth, key])
 
   const loadItems = useCallback(async () => {
     if (loadingRef.current || !mountedRef.current) {
@@ -93,28 +163,31 @@ export function TodayPage() {
         setPageDate(payload.date)
         return
       }
-
-      const payload = await fetchTodayPublicData()
+      const itemsForDate = await fetchItemsByDate(selectedDate)
       if (!mountedRef.current) {
         return
       }
-      setItems(payload.items.map(toTodayCardItemFromPublic))
+      const mapped = itemsForDate.map(toTodayCardItemFromPrivate)
+      setItems(mapped)
       setSelectedIds(new Set())
-      setStats(payload.stats)
-      setPageDate(payload.date)
+      setStats(getStatsFromItems(mapped))
+      setPageDate(selectedDate)
+      if (formatMonth(selectedDate) === calendarMonth) {
+        void loadCalendar()
+      }
     } catch (err: unknown) {
       const status = err instanceof ApiError ? err.status : null
       if (!key && (status === 403 || status === 404)) {
-        const fallbackPayload = await Promise.all([fetchTodayItems(), fetchTodayStats()]).catch(() => null)
+        const fallbackPayload = await fetchItemsByDate(selectedDate).catch(() => null)
         if (fallbackPayload) {
-          const [itemsFromPrivateApi, statsFromPrivateApi] = fallbackPayload
           if (!mountedRef.current) {
             return
           }
-          setItems(itemsFromPrivateApi.map(toTodayCardItemFromPrivate))
+          const mapped = fallbackPayload.map(toTodayCardItemFromPrivate)
+          setItems(mapped)
           setSelectedIds(new Set())
-          setStats(statsFromPrivateApi)
-          setPageDate(new Date().toISOString().slice(0, 10))
+          setStats(getStatsFromItems(mapped))
+          setPageDate(selectedDate)
           setError(null)
           return
         }
@@ -131,7 +204,7 @@ export function TodayPage() {
     } finally {
       loadingRef.current = false
     }
-  }, [key])
+  }, [calendarMonth, key, loadCalendar, selectedDate])
 
   useEffect(() => {
     mountedRef.current = true
@@ -140,6 +213,10 @@ export function TodayPage() {
       mountedRef.current = false
     }
   }, [loadItems])
+
+  useEffect(() => {
+    void loadCalendar()
+  }, [loadCalendar])
 
   useItemCaptureRefresh(loadItems, { enabled: !key })
 
@@ -237,14 +314,110 @@ export function TodayPage() {
     return Number.isNaN(date.getTime()) ? pageDate : date.toLocaleDateString()
   }, [pageDate])
 
+  const monthDate = useMemo(() => new Date(`${calendarMonth}-01T00:00:00`), [calendarMonth])
+  const monthLabel = useMemo(() => {
+    if (Number.isNaN(monthDate.getTime())) {
+      return calendarMonth
+    }
+    return monthDate.toLocaleDateString(undefined, { year: 'numeric', month: 'long' })
+  }, [calendarMonth, monthDate])
+  const firstDay = useMemo(() => {
+    if (Number.isNaN(monthDate.getTime())) {
+      return 0
+    }
+    return new Date(monthDate.getFullYear(), monthDate.getMonth(), 1).getDay()
+  }, [monthDate])
+  const totalDays = useMemo(() => {
+    if (Number.isNaN(monthDate.getTime())) {
+      return 0
+    }
+    return new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate()
+  }, [monthDate])
+  const days = useMemo(() => Array.from({ length: totalDays }, (_, index) => index + 1), [totalDays])
+
   return (
-    <section className="today-page d2-ui">
-      <header className="d2-panel today-header">
+    <section className={`today-page ${isSharedView ? 'today-page--shared' : 'd2-ui'}`}>
+      <header className={isSharedView ? 'today-header today-header--shared' : 'd2-panel today-header'}>
         <h2>Today Loot</h2>
         <p>{headerDateText}</p>
       </header>
 
-      <section className="d2-panel today-stats d2-stat-grid" aria-label="Today stats">
+      {!key ? (
+        <section className="d2-panel today-calendar" aria-label="Calendar">
+          <div className="today-calendar__header">
+            <button
+              type="button"
+              className="d2-button d2-button--secondary d2-button--sm"
+              onClick={() => {
+                const next = shiftMonth(calendarMonth, -1)
+                setCalendarMonth(next)
+                setSelectedDate(`${next}-01`)
+              }}
+            >
+              Prev
+            </button>
+            <div className="today-calendar__title">
+              <strong>{monthLabel}</strong>
+              <button
+                type="button"
+                className="d2-button d2-button--secondary d2-button--sm"
+                onClick={() => {
+                  setCalendarMonth(formatMonth(todayDate))
+                  setSelectedDate(todayDate)
+                }}
+              >
+                Today
+              </button>
+            </div>
+            <button
+              type="button"
+              className="d2-button d2-button--secondary d2-button--sm"
+              onClick={() => {
+                const next = shiftMonth(calendarMonth, 1)
+                setCalendarMonth(next)
+                setSelectedDate(`${next}-01`)
+              }}
+            >
+              Next
+            </button>
+          </div>
+          <div className="today-calendar__weekdays">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => (
+              <span key={label}>{label}</span>
+            ))}
+          </div>
+          <div className="today-calendar__grid">
+            {Array.from({ length: firstDay }).map((_, index) => (
+              <div key={`empty-${index}`} className="today-calendar__empty" />
+            ))}
+            {days.map((day) => {
+              const dateKey = `${calendarMonth}-${String(day).padStart(2, '0')}`
+              const count = calendarCounts[dateKey] ?? 0
+              const isSelected = dateKey === selectedDate
+              const isToday = dateKey === todayDate
+              return (
+                <button
+                  key={dateKey}
+                  type="button"
+                  className={`today-calendar__day${count > 0 ? ' has-items' : ''}${isSelected ? ' is-selected' : ''}${
+                    isToday ? ' is-today' : ''
+                  }`}
+                  onClick={() => setSelectedDate(dateKey)}
+                >
+                  <span>{day}</span>
+                  {count > 0 ? <em>{count}</em> : null}
+                </button>
+              )
+            })}
+          </div>
+          {calendarError ? <p>{calendarError}</p> : null}
+        </section>
+      ) : null}
+
+      <section
+        className={isSharedView ? 'today-stats today-stats--shared' : 'd2-panel today-stats d2-stat-grid'}
+        aria-label="Today stats"
+      >
         {stats ? (
           <>
             <article className="d2-stat">
@@ -265,30 +438,32 @@ export function TodayPage() {
         )}
       </section>
 
-      <section className="d2-panel today-filters" aria-label="Today filters">
-        <label>
-          <span className="d2-label">Quality</span>
-          <select className="d2-select" value={qualityFilter} onChange={(event) => setQualityFilter(event.target.value)}>
-            <option value="all">All</option>
-            {qualityOptions.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className="d2-label">Category</span>
-          <select className="d2-select" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-            <option value="all">All</option>
-            {categoryOptions.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
-      </section>
+      {!isSharedView ? (
+        <section className="d2-panel today-filters" aria-label="Today filters">
+          <label>
+            <span className="d2-label">Quality</span>
+            <select className="d2-select" value={qualityFilter} onChange={(event) => setQualityFilter(event.target.value)}>
+              <option value="all">All</option>
+              {qualityOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="d2-label">Category</span>
+            <select className="d2-select" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
+              <option value="all">All</option>
+              {categoryOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+        </section>
+      ) : null}
 
       {manageableItems.length > 0 ? (
         <div className="today-actions">
@@ -328,12 +503,13 @@ export function TodayPage() {
             analysisProfile: item.analysisProfile,
             analysisTags: item.analysisTags,
           })
+          const visualState = getItemVisualState({ analysisTags: item.analysisTags })
 
           return (
             <article
               key={`${item.displayName}-${item.capturedAt}-${index}`}
-              className="d2-panel today-item-card item-themed"
-              style={theme.style}
+              className={isSharedView ? 'today-item-card today-item-card--shared' : 'd2-panel today-item-card item-themed'}
+              style={isSharedView ? undefined : theme.style}
             >
               {item.id ? (
                 <label className="today-item-card__select">
@@ -345,14 +521,26 @@ export function TodayPage() {
                   <span>Select</span>
                 </label>
               ) : null}
-              {item.thumbnail ? <img src={item.thumbnail} alt={item.displayName} className="today-item-card__thumb" /> : null}
-              <h3 className="item-theme-name">{item.displayName}</h3>
+              {item.thumbnail ? (
+                <img
+                  src={item.thumbnail}
+                  alt={item.displayName}
+                  className={`today-item-card__thumb${visualState.isEthereal ? ' is-ethereal' : ''}`}
+                />
+              ) : null}
+              <h3 className={isSharedView ? '' : 'item-theme-name'}>
+                {item.displayName}
+              </h3>
               <div className="item-theme-badges">
                 <span className="item-theme-badge">{theme.rule.label}</span>
+                {item.isCorrupted ? <span className="item-theme-badge corrupted-badge">Corrupted</span> : null}
+                {visualState.isEthereal ? <span className="item-theme-badge ethereal-badge">Ethereal</span> : null}
+                {visualState.socketCount !== null ? (
+                  <span className="item-theme-badge socket-badge">Socketed ({visualState.socketCount})</span>
+                ) : null}
               </div>
               <p>Quality: {item.quality}</p>
               <p>Qty: {item.quantity ?? 1}</p>
-              {item.isCorrupted ? <p className="today-item-card__corrupted">Corrupted</p> : null}
               <p>{new Date(item.capturedAt).toLocaleTimeString()}</p>
             </article>
           )
@@ -360,7 +548,7 @@ export function TodayPage() {
       </section>
 
       {filteredItems.length === 0 ? (
-        <div className="d2-panel">
+        <div className={isSharedView ? 'today-empty-shared' : 'd2-panel'}>
           <p>No items captured today.</p>
         </div>
       ) : null}

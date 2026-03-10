@@ -17,6 +17,7 @@
     "tauri:build": "scripts\\tauri-env.cmd npx tauri build"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.98.0",
     "@tauri-apps/api": "^2.10.1",
     "better-sqlite3": "^12.6.2",
     "clipboardy": "^5.3.1",

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiError, fetchOverlayItems, fetchSettings } from '../lib/api'
+import { getItemVisualState } from '../lib/item-visual-state'
 import type { ItemSummary } from '../lib/types'
 import { useItemCaptureRefresh } from '../lib/use-item-capture-refresh'
 import { resolveItemTheme } from '../theme/resolveItemTheme'
@@ -18,15 +19,19 @@ function qualityClass(quality: string): string {
   if (normalized === 'unique') {
     return 'is-unique'
   }
+  if (normalized === 'crafted' || normalized === 'craft') {
+    return 'is-crafted'
+  }
   return 'is-normal'
 }
 
 function OverlayThumb({ item }: { item: ItemSummary }) {
   const src = item.thumbnail ?? '/icons/generic/item_unknown.svg'
+  const visualState = getItemVisualState({ analysisTags: item.analysisTags })
 
   return (
     <img
-      className="overlay-row__thumb"
+      className={`overlay-row__thumb${visualState.isEthereal ? ' is-ethereal' : ''}`}
       src={src}
       alt={item.displayName}
       loading="lazy"
@@ -87,6 +92,17 @@ function readLocalTitleOverrides(prefix: string) {
   return overrides
 }
 
+function isObsBrowserSource(): boolean {
+  return /obs/i.test(window.navigator.userAgent)
+}
+
+function readPreviewActive(): boolean {
+  if (isObsBrowserSource()) {
+    return false
+  }
+  return window.localStorage.getItem('overlay_title_preview_active') === 'true'
+}
+
 export function OverlayPage() {
   const [items, setItems] = useState<ItemSummary[]>([])
   const [newIds, setNewIds] = useState<Set<string>>(new Set())
@@ -97,8 +113,10 @@ export function OverlayPage() {
   const [titleColor, setTitleColor] = useState('#f7e6a8')
   const [titleBackgroundColor, setTitleBackgroundColor] = useState('#1c1a1a')
   const [titlePadding, setTitlePadding] = useState(0)
+  const [minimalMode, setMinimalMode] = useState(false)
   const loadingRef = useRef(false)
   const mountedRef = useRef(true)
+  const lastAppliedModeLogRef = useRef<string>('')
 
   useEffect(() => {
     document.body.classList.add('overlay-mode')
@@ -107,7 +125,7 @@ export function OverlayPage() {
     document.documentElement.style.background = 'transparent'
     document.body.style.background = 'transparent'
 
-    const previewActive = window.localStorage.getItem('overlay_title_preview_active') === 'true'
+    const previewActive = readPreviewActive()
     const overrides = readLocalTitleOverrides(previewActive ? 'overlay_title_preview' : 'overlay_title')
     if (overrides.title) {
       setTitle(overrides.title)
@@ -126,6 +144,12 @@ export function OverlayPage() {
     }
     if (typeof overrides.padding === 'number') {
       setTitlePadding(overrides.padding)
+    }
+    if (previewActive) {
+      const localMinimal = window.localStorage.getItem('overlay_minimal_mode_preview')
+      if (localMinimal === 'true' || localMinimal === 'false') {
+        setMinimalMode(localMinimal === 'true')
+      }
     }
 
     return () => {
@@ -153,6 +177,10 @@ export function OverlayPage() {
       let overlayTitleColor = latest.titleColor ?? titleDefaults.color
       let overlayTitleBackgroundColor = latest.titleBackgroundColor ?? titleDefaults.backgroundColor
       let overlayTitlePadding = latest.titlePadding ?? titleDefaults.padding
+      let overlayMinimalMode = latest.minimalMode ?? false
+      let minimalModeSource: 'api-overlay' | 'settings' | 'local-override' = typeof latest.minimalMode === 'boolean'
+        ? 'api-overlay'
+        : 'settings'
       try {
         const settings = await fetchSettings()
         overlayTitle = settings.overlay_title ?? overlayTitle
@@ -161,10 +189,12 @@ export function OverlayPage() {
         overlayTitleColor = settings.overlay_title_color ?? overlayTitleColor
         overlayTitleBackgroundColor = settings.overlay_title_background_color ?? overlayTitleBackgroundColor
         overlayTitlePadding = settings.overlay_title_padding ?? overlayTitlePadding
+        overlayMinimalMode = settings.overlay_minimal_mode ?? overlayMinimalMode
+        minimalModeSource = 'settings'
       } catch {
         // ignore settings fetch failures
       }
-      const previewActive = window.localStorage.getItem('overlay_title_preview_active') === 'true'
+      const previewActive = readPreviewActive()
       const overrides = readLocalTitleOverrides(previewActive ? 'overlay_title_preview' : 'overlay_title')
       overlayTitle = overrides.title ?? overlayTitle
       overlayTitleEnabled = overrides.titleEnabled ?? overlayTitleEnabled
@@ -172,12 +202,32 @@ export function OverlayPage() {
       overlayTitleColor = overrides.color ?? overlayTitleColor
       overlayTitleBackgroundColor = overrides.backgroundColor ?? overlayTitleBackgroundColor
       overlayTitlePadding = overrides.padding ?? overlayTitlePadding
+      if (previewActive) {
+        const localMinimal = window.localStorage.getItem('overlay_minimal_mode_preview')
+        if (localMinimal === 'true' || localMinimal === 'false') {
+          overlayMinimalMode = localMinimal === 'true'
+          minimalModeSource = 'local-override'
+        }
+      }
+
+      const appliedLogKey = `${overlayMinimalMode}:${minimalModeSource}:${latest.items.length}`
+      if (lastAppliedModeLogRef.current !== appliedLogKey) {
+        lastAppliedModeLogRef.current = appliedLogKey
+        console.info('[overlay] applied minimal mode', {
+          minimalMode: overlayMinimalMode,
+          source: minimalModeSource,
+          itemCount: latest.items.length,
+          timestamp: new Date().toISOString(),
+        })
+      }
+
       setTitle(overlayTitle)
       setTitleEnabled(overlayTitleEnabled)
       setTitleSize(overlayTitleSize)
       setTitleColor(overlayTitleColor)
       setTitleBackgroundColor(overlayTitleBackgroundColor)
       setTitlePadding(overlayTitlePadding)
+      setMinimalMode(overlayMinimalMode)
 
       setLoadError(null)
 
@@ -246,7 +296,7 @@ export function OverlayPage() {
     }
   }, [loadItems])
 
-  useItemCaptureRefresh(loadItems)
+  useItemCaptureRefresh(loadItems, { enabled: true })
 
   const empty = useMemo(() => items.length === 0, [items])
 
@@ -283,6 +333,8 @@ export function OverlayPage() {
           const labelNormalized = theme.rule.label.trim().toLowerCase()
           const qualityNormalized = item.quality.trim().toLowerCase()
           const showQualityBadge = labelNormalized !== qualityNormalized
+          const hasCorruptedLabel = labelNormalized.includes('corrupted')
+          const visualState = getItemVisualState({ analysisTags: item.analysisTags })
 
           return (
             <article
@@ -290,7 +342,7 @@ export function OverlayPage() {
               className={`overlay-row item-themed ${newIds.has(item.id) ? 'is-new' : ''}`}
               style={theme.style}
             >
-              <OverlayThumb item={item} />
+              {minimalMode ? null : <OverlayThumb item={item} />}
               <div className="overlay-row__body">
                 <p className="overlay-row__name item-theme-name" title={item.displayName}>
                   {item.displayName}
@@ -298,14 +350,20 @@ export function OverlayPage() {
                 {item.keyStats && item.keyStats.length > 0 ? (
                   <p className="overlay-row__stats">{item.keyStats.join(' · ')}</p>
                 ) : null}
-                <div className="overlay-row__badges">
-                  <span className="overlay-badge item-theme-badge">{theme.rule.label}</span>
-                  {showQualityBadge ? (
-                    <span className={`overlay-badge quality ${qualityClass(item.quality)}`}>{item.quality}</span>
-                  ) : null}
-                  {item.quantity !== null ? <span className="overlay-badge quantity">x{item.quantity}</span> : null}
-                  {item.isCorrupted ? <span className="overlay-badge corrupted">Corrupted</span> : null}
-                </div>
+                {minimalMode ? null : (
+                  <div className="overlay-row__badges">
+                    <span className="overlay-badge item-theme-badge">{theme.rule.label}</span>
+                    {showQualityBadge ? (
+                      <span className={`overlay-badge quality ${qualityClass(item.quality)}`}>{item.quality}</span>
+                    ) : null}
+                    {item.quantity !== null ? <span className="overlay-badge quantity">x{item.quantity}</span> : null}
+                    {item.isCorrupted && !hasCorruptedLabel ? <span className="overlay-badge corrupted">Corrupted</span> : null}
+                    {visualState.isEthereal ? <span className="overlay-badge item-theme-badge ethereal-badge">Ethereal</span> : null}
+                    {visualState.socketCount !== null ? (
+                      <span className="overlay-badge item-theme-badge socket-badge">Socketed ({visualState.socketCount})</span>
+                    ) : null}
+                  </div>
+                )}
               </div>
             </article>
           )

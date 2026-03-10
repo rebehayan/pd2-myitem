@@ -1,0 +1,50 @@
+{
+  "iLevel": 92,
+  "location": "Inventory",
+  "name": "Rainbow Facet",
+  "quality": "Unique",
+  "stats": [
+    {
+      "name": "to Minimum Fire Damage",
+      "range": {
+        "max": 45,
+        "min": 17
+      },
+      "stat_id": 48,
+      "value": 17
+    },
+    {
+      "name": "to Maximum Fire Damage",
+      "range": {
+        "max": 45,
+        "min": 17
+      },
+      "stat_id": 49,
+      "value": 45
+    },
+    {
+      "name": "to Enemy Fire Resistance",
+      "range": {
+        "max": 5,
+        "min": 3
+      },
+      "stat_id": 333,
+      "value": 4
+    },
+    {
+      "name": "to Fire Skill Damage",
+      "range": {
+        "max": 5,
+        "min": 3
+      },
+      "stat_id": 329,
+      "value": 5
+    },
+    {
+      "chance": 100,
+      "level": 29,
+      "name": "100% Chance to cast level 29 Blaze when you Level-Up"
+    }
+  ],
+  "type": "Jewel"
+}

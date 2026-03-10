@@ -40,15 +40,14 @@ export interface TodayPublicPayload {
 
 export interface AppSettings {
   overlay_item_limit: number
-  overlay_position: 'right' | 'left' | 'bottom'
   overlay_opacity: number
+  overlay_minimal_mode: boolean
   overlay_title: string
   overlay_title_enabled: boolean
   overlay_title_size: number
   overlay_title_color: string
   overlay_title_background_color: string
   overlay_title_padding: number
-  theme: 'light' | 'dark'
   qr_public_enabled: boolean
   qr_token: string
 }
@@ -58,6 +57,7 @@ export interface ItemStat {
   statValue: number | null
   rangeMin: number | null
   rangeMax: number | null
+  isCorrupted?: boolean
 }
 
 export interface ItemDetail extends ItemSummary {

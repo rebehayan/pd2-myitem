@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { getAccessToken } from './supabase'
 
 interface ItemCaptureRefreshOptions {
   enabled?: boolean
@@ -46,18 +47,29 @@ export function useItemCaptureRefresh(onRefresh: () => void, options: ItemCaptur
     }
 
     const apiBase = import.meta.env.VITE_API_BASE ?? ''
-    const eventSource = new EventSource(`${apiBase}/api/events/items`)
-    const onCaptured = () => runBurst()
+    let eventSource: EventSource | null = null
 
-    eventSource.addEventListener('item-captured', onCaptured)
-    eventSource.onerror = () => {
-      eventSource.close()
+    const startStream = async () => {
+      const token = await getAccessToken()
+      if (disposed) {
+        return
+      }
+      const query = token ? `?token=${encodeURIComponent(token)}` : ''
+      eventSource = new EventSource(`${apiBase}/api/events/items${query}`)
+      const onCaptured = () => runBurst()
+
+      eventSource.addEventListener('item-captured', onCaptured)
+      eventSource.onerror = () => {
+        eventSource?.close()
+      }
     }
+
+    void startStream()
 
     return () => {
       disposed = true
       clearTimeouts()
-      eventSource.close()
+      eventSource?.close()
     }
   }, [enabled, burstCount, burstIntervalMs])
 }

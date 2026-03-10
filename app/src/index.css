@@ -31,7 +31,7 @@
 }
 
 :root {
-  font-family: "Exocet", "Noto Sans", "Noto Sans KR", "Segoe UI", sans-serif;
+  font-family: "Noto Sans", "Noto Sans KR", "Segoe UI", sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color: var(--d2-ash-1);
@@ -42,7 +42,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   --d2-font-display: "Exocet", "Noto Sans", "Noto Sans KR", "Segoe UI", sans-serif;
-  --d2-font-body: "Exocet", "Noto Sans", "Noto Sans KR", "Segoe UI", sans-serif;
+  --d2-font-body: "Noto Sans", "Noto Sans KR", "Segoe UI", sans-serif;
   --d2-gold-0: #f7e6a8;
   --d2-gold-1: #e5c874;
   --d2-gold-2: #b98b2c;
@@ -71,9 +71,13 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 60%),
-    linear-gradient(180deg, var(--d2-stone-0), var(--d2-stone-2));
+  background:
+    radial-gradient(circle at 50% -10%, rgba(120, 120, 120, 0.12), transparent 35%),
+    radial-gradient(circle at 0% 50%, rgba(255, 255, 255, 0.06), transparent 28%),
+    radial-gradient(circle at 100% 50%, rgba(255, 255, 255, 0.06), transparent 28%),
+    linear-gradient(90deg, #040507 0%, #101217 16%, #0a0c11 34%, #06070b 66%, #101217 84%, #040507 100%);
   color: var(--d2-ash-1);
+  background-attachment: fixed;
 }
 
 a {

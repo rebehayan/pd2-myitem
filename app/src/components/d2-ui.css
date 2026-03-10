@@ -5,23 +5,23 @@
 
 .d2-panel {
   position: relative;
-  border: 2px solid transparent;
-  border-radius: 16px;
+  border: 0;
+  border-radius: 4px;
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 55%),
-    linear-gradient(145deg, var(--d2-stone-1), var(--d2-stone-3));
-  box-shadow: var(--d2-shadow-strong), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-  padding: 1.25rem 1.4rem 1.4rem;
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.04), transparent 55%),
+    linear-gradient(180deg, rgba(9, 10, 14, 0.98), rgba(4, 5, 9, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  padding: 0.9rem 1rem 1rem;
   overflow: hidden;
 }
 
 .d2-panel::before {
-  content: "";
+  content: none;
   position: absolute;
-  inset: 0.55rem;
-  border-radius: 12px;
-  border: 2px solid transparent;
-  background: var(--d2-border-gold) border-box;
+  inset: 0.3rem;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  background: linear-gradient(145deg, rgba(229, 200, 116, 0.8), rgba(116, 92, 41, 0.8)) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -34,8 +34,7 @@
   inset: 0;
   background-image:
     radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.08), transparent 40%),
-    radial-gradient(circle at 90% 10%, rgba(255, 188, 122, 0.08), transparent 35%),
-    repeating-linear-gradient(120deg, rgba(0, 0, 0, 0.22) 0px, rgba(0, 0, 0, 0.22) 2px, transparent 2px, transparent 6px);
+    radial-gradient(circle at 90% 10%, rgba(255, 188, 122, 0.08), transparent 35%);
   opacity: 0.45;
   pointer-events: none;
 }
@@ -91,12 +90,12 @@
   font-family: var(--d2-font-display);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border-radius: 10px;
+  border-radius: 3px;
   border: 1px solid transparent;
   padding: 0.7rem 1.4rem;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
-  box-shadow: var(--d2-shadow-soft);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .d2-button:disabled {
@@ -106,16 +105,16 @@
 }
 
 .d2-button--primary {
-  background: linear-gradient(160deg, var(--d2-gold-1), var(--d2-gold-3));
-  color: #20170b;
-  border-color: rgba(255, 227, 168, 0.6);
+  background: linear-gradient(180deg, rgba(178, 131, 34, 0.96), rgba(118, 84, 20, 0.96));
+  color: #140f07;
+  border-color: rgba(229, 200, 116, 0.8);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .d2-button--secondary {
-  background: linear-gradient(160deg, var(--d2-stone-3), var(--d2-stone-1));
+  background: linear-gradient(180deg, rgba(19, 21, 28, 0.98), rgba(8, 9, 12, 0.98));
   color: var(--d2-ash-1);
-  border-color: rgba(229, 200, 116, 0.45);
+  border-color: rgba(116, 92, 41, 0.8);
 }
 
 .d2-button--ember {
@@ -127,7 +126,7 @@
 
 .d2-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: var(--d2-shadow-strong), var(--d2-glow-gold);
+  box-shadow: 0 0 0 1px rgba(229, 200, 116, 0.35);
 }
 
 .d2-button:active:not(:disabled) {
@@ -396,9 +395,7 @@
   padding: 0.85rem 1rem;
   border-radius: 12px;
   border: 1px solid rgba(229, 200, 116, 0.5);
-  background:
-    linear-gradient(180deg, rgba(43, 32, 24, 0.85), rgba(18, 15, 14, 0.95)),
-    repeating-linear-gradient(110deg, rgba(0, 0, 0, 0.28) 0px, rgba(0, 0, 0, 0.28) 2px, transparent 2px, transparent 6px);
+  background: linear-gradient(180deg, rgba(43, 32, 24, 0.85), rgba(18, 15, 14, 0.95));
   box-shadow: var(--d2-shadow-soft);
 }
 

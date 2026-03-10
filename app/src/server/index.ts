@@ -6,6 +6,8 @@ import {
   clearAllItems,
   deleteItemById,
   getItemById,
+  getItemDateCountsByMonth,
+  getItemsByDate,
   getOverlayItems,
   getRecentItems,
   getTodayItems,
@@ -13,8 +15,10 @@ import {
 } from './repository'
 import { startClipboardMonitor } from './clipboard-monitor'
 import { captureClipboardPayload } from './capture-service'
+import { ingestClipboardJson } from './ingestion'
 import { onItemCaptured } from './item-events'
 import { getSettings, updateSettings } from './settings-repository'
+import { supabaseAdmin, supabaseConfigured } from './supabase'
 
 const app = express()
 const port = Number(process.env.API_PORT ?? 4310)
@@ -44,6 +48,119 @@ app.use(
   }),
 )
 app.use(express.json())
+
+const publicRoutes = new Set(['/api/health', '/api/today/public'])
+const allowGuestLocalApi =
+  process.env.ALLOW_GUEST_LOCAL_API === 'true' ||
+  (process.env.NODE_ENV !== 'production' && process.env.ALLOW_GUEST_LOCAL_API !== 'false')
+
+function isLoopbackHost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+}
+
+function isLocalRequest(req: Request): boolean {
+  const origin = req.header('origin')
+  if (origin) {
+    try {
+      const url = new URL(origin)
+      if (isLoopbackHost(url.hostname)) {
+        return true
+      }
+    } catch {
+      // ignore invalid origin value
+    }
+  }
+
+  const host = req.header('host')
+  if (host) {
+    const hostname = host.split(':')[0]?.trim().toLowerCase() ?? ''
+    if (isLoopbackHost(hostname)) {
+      return true
+    }
+  }
+
+  const ip = req.ip?.toLowerCase() ?? ''
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1'
+}
+
+function getAuthToken(req: Request): string | null {
+  const authHeader = req.header('authorization')
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice('Bearer '.length)
+  }
+  if (typeof req.query.token === 'string' && req.query.token.trim()) {
+    return req.query.token.trim()
+  }
+  return null
+}
+
+function readParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '')
+}
+
+async function requireAuthenticatedUser(req: Request, res: Response): Promise<boolean> {
+  if (!supabaseConfigured || !supabaseAdmin) {
+    res.status(503).json({ message: 'Auth backend is not configured' })
+    return false
+  }
+
+  const token = getAuthToken(req)
+  if (!token) {
+    res.status(401).json({ message: 'Login required for sharing' })
+    return false
+  }
+
+  const { data, error } = await supabaseAdmin.auth.getUser(token)
+  if (error || !data.user) {
+    res.status(401).json({ message: 'Invalid auth token' })
+    return false
+  }
+
+  const masterUserId = process.env.MASTER_USER_ID
+  if (masterUserId && data.user.id !== masterUserId) {
+    res.status(403).json({ message: 'Master access required' })
+    return false
+  }
+
+  return true
+}
+
+app.use(async (req, res, next) => {
+  if (req.method === 'OPTIONS' || !req.path.startsWith('/api') || publicRoutes.has(req.path)) {
+    next()
+    return
+  }
+
+  if (allowGuestLocalApi && isLocalRequest(req)) {
+    next()
+    return
+  }
+
+  if (!supabaseConfigured || !supabaseAdmin) {
+    res.status(503).json({ message: 'Auth backend is not configured' })
+    return
+  }
+
+  const token = getAuthToken(req)
+  if (!token) {
+    res.status(401).json({ message: 'Missing auth token' })
+    return
+  }
+
+  const { data, error } = await supabaseAdmin.auth.getUser(token)
+  if (error || !data.user) {
+    res.status(401).json({ message: 'Invalid auth token' })
+    return
+  }
+
+  const masterUserId = process.env.MASTER_USER_ID
+  if (masterUserId && data.user.id !== masterUserId) {
+    res.status(403).json({ message: 'Master access required' })
+    return
+  }
+
+  next()
+})
 
 interface ApiItemSummary {
   id: string
@@ -89,28 +206,28 @@ const publicTodayRateLimitCount = 60
 const publicTodayAccessLog = new Map<string, { windowStartedAt: number; count: number }>()
 let publicTodayCache: { expiresAt: number; payload: ApiTodayPublicPayload } | null = null
 
-function isLoopbackIp(ip: string): boolean {
-  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1'
-}
-
-function isLoopbackHostname(hostname: string): boolean {
-  const normalized = hostname.trim().toLowerCase()
-  return normalized === '127.0.0.1' || normalized === 'localhost' || normalized === '::1'
-}
-
-function isLocalOnlyRequest(req: Request): boolean {
-  const ip = req.ip ?? ''
-  const forwardedFor = req.header('x-forwarded-for')
-  return isLoopbackIp(ip) && !forwardedFor && isLoopbackHostname(req.hostname)
-}
-
-function rejectIfNotLocal(req: Request, res: Response): boolean {
-  if (isLocalOnlyRequest(req)) {
-    return false
+const asyncHandler = (handler: (req: Request, res: Response) => Promise<void>) => {
+  return (req: Request, res: Response) => {
+    handler(req, res).catch((error: unknown) => {
+      console.error('[api] request failed', error)
+      res.status(500).json({ message: 'Internal server error' })
+    })
   }
-  res.status(403).json({ message: 'This endpoint is available only from local app context' })
-  return true
 }
+
+const settingsBody = z.object({
+  overlay_item_limit: z.number().int().min(1).max(20).optional(),
+  overlay_opacity: z.number().min(0.1).max(1).optional(),
+  overlay_minimal_mode: z.boolean().optional(),
+  overlay_title: z.string().max(60).optional(),
+  overlay_title_enabled: z.boolean().optional(),
+  overlay_title_size: z.number().int().min(12).max(36).optional(),
+  overlay_title_color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  overlay_title_background_color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+  overlay_title_padding: z.number().int().min(0).max(24).optional(),
+  qr_public_enabled: z.boolean().optional(),
+  qr_token: z.union([z.string().regex(/^[a-f0-9]{32}$/i), z.literal('')]).optional(),
+})
 
 function getPublicClientId(req: Request): string {
   if (trustProxyForRateLimit) {
@@ -190,9 +307,9 @@ function canAccessTodayPublic(clientId: string): boolean {
   return true
 }
 
-function getTodayPublicPayload(): ApiTodayPublicPayload {
-  const todayItems = getTodayItems()
-  const stats = getTodayStats()
+async function getTodayPublicPayload(): Promise<ApiTodayPublicPayload> {
+  const todayItems = await getTodayItems()
+  const stats = await getTodayStats()
 
   return {
     date: new Date().toISOString().slice(0, 10),
@@ -225,165 +342,293 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 
-app.get('/api/items/recent', (_req, res) => {
-  if (rejectIfNotLocal(_req, res)) {
-    return
-  }
-  res.json(getRecentItems().map(toApiItemSummary))
-})
+app.get(
+  '/api/items/recent',
+  asyncHandler(async (_req, res) => {
+    res.json((await getRecentItems()).map(toApiItemSummary))
+  }),
+)
 
-app.get('/api/items/today', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
-  res.json(getTodayItems().map(toApiItemSummary))
-})
+app.get(
+  '/api/items/today',
+  asyncHandler(async (_req, res) => {
+    res.json((await getTodayItems()).map(toApiItemSummary))
+  }),
+)
 
-app.get('/api/overlay', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
-  const settings = getSettings()
-  res.json({
-    title: settings.overlay_title,
-    title_enabled: settings.overlay_title_enabled,
-    title_size: settings.overlay_title_size,
-    title_color: settings.overlay_title_color,
-    title_background_color: settings.overlay_title_background_color,
-    title_padding: settings.overlay_title_padding,
-    items: getOverlayItems(settings.overlay_item_limit).map(toApiItemSummary),
-  })
-})
+app.get(
+  '/api/items/by-date',
+  asyncHandler(async (req, res) => {
+    const date = typeof req.query.date === 'string' ? req.query.date : ''
+    if (!date) {
+      res.status(400).json({ message: 'Missing date parameter' })
+      return
+    }
+    res.json((await getItemsByDate(date)).map(toApiItemSummary))
+  }),
+)
 
-app.get('/api/stats/today', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
-  const stats = getTodayStats()
-  res.json({
-    total_items: stats.totalItems,
-    unique_items: stats.uniqueItems,
-    runes: stats.runes,
-    materials: stats.materials,
-  })
-})
+app.get(
+  '/api/items/calendar',
+  asyncHandler(async (req, res) => {
+    const month = typeof req.query.month === 'string' ? req.query.month : ''
+    if (!month) {
+      res.status(400).json({ message: 'Missing month parameter' })
+      return
+    }
+    res.json(await getItemDateCountsByMonth(month))
+  }),
+)
 
-app.get('/api/today/public', (req, res) => {
-  const settings = getSettings()
-  const key = typeof req.query.key === 'string' ? req.query.key : undefined
-  const tokenMatched = Boolean(key && settings.qr_token && key === settings.qr_token)
+app.get(
+  '/api/overlay',
+  asyncHandler(async (req, res) => {
+    const settings = await getSettings()
+    const items = (await getOverlayItems(settings.overlay_item_limit)).map(toApiItemSummary)
 
-  if (!settings.qr_public_enabled && !tokenMatched) {
-    res.status(403).json({ message: 'Today public page is disabled or key is invalid' })
-    return
-  }
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    res.setHeader('Pragma', 'no-cache')
+    res.setHeader('Expires', '0')
 
-  const clientId = getPublicClientId(req)
-  if (!canAccessTodayPublic(clientId)) {
-    res.status(429).json({ message: 'Rate limit exceeded' })
-    return
-  }
+    console.info('[overlay] payload generated', {
+      minimalMode: settings.overlay_minimal_mode,
+      itemLimit: settings.overlay_item_limit,
+      titleEnabled: settings.overlay_title_enabled,
+      itemCount: items.length,
+      requestMode: allowGuestLocalApi && isLocalRequest(req) ? 'guest-local' : 'authenticated',
+      userAgent: req.header('user-agent') ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    })
 
-  const now = Date.now()
-  if (publicTodayCache && publicTodayCache.expiresAt > now) {
+    res.json({
+      title: settings.overlay_title,
+      title_enabled: settings.overlay_title_enabled,
+      title_size: settings.overlay_title_size,
+      title_color: settings.overlay_title_color,
+      title_background_color: settings.overlay_title_background_color,
+      title_padding: settings.overlay_title_padding,
+      overlay_minimal_mode: settings.overlay_minimal_mode,
+      items,
+    })
+  }),
+)
+
+app.get(
+  '/api/stats/today',
+  asyncHandler(async (_req, res) => {
+    const stats = await getTodayStats()
+    res.json({
+      total_items: stats.totalItems,
+      unique_items: stats.uniqueItems,
+      runes: stats.runes,
+      materials: stats.materials,
+    })
+  }),
+)
+
+app.get(
+  '/api/today/public',
+  asyncHandler(async (req, res) => {
+    const settings = await getSettings()
+    const key = typeof req.query.key === 'string' ? req.query.key : undefined
+    const tokenMatched = Boolean(key && settings.qr_token && key === settings.qr_token)
+
+    if (!tokenMatched) {
+      res.status(403).json({ message: 'Invalid share key' })
+      return
+    }
+
+    const clientId = getPublicClientId(req)
+    if (!canAccessTodayPublic(clientId)) {
+      res.status(429).json({ message: 'Rate limit exceeded' })
+      return
+    }
+
+    const now = Date.now()
+    if (publicTodayCache && publicTodayCache.expiresAt > now) {
+      res.setHeader('Cache-Control', 'public, max-age=30')
+      res.json(publicTodayCache.payload)
+      return
+    }
+
+    const payload = await getTodayPublicPayload()
+    publicTodayCache = {
+      payload,
+      expiresAt: now + publicTodayCacheTtlMs,
+    }
     res.setHeader('Cache-Control', 'public, max-age=30')
-    res.json(publicTodayCache.payload)
-    return
-  }
+    res.json(payload)
+  }),
+)
 
-  const payload = getTodayPublicPayload()
-  publicTodayCache = {
-    payload,
-    expiresAt: now + publicTodayCacheTtlMs,
-  }
-  res.setHeader('Cache-Control', 'public, max-age=30')
-  res.json(payload)
+app.get(
+  '/api/settings',
+  asyncHandler(async (req, res) => {
+    const allowGuestSettings = allowGuestLocalApi && isLocalRequest(req)
+    if (!allowGuestSettings && !(await requireAuthenticatedUser(req, res))) {
+      return
+    }
+    res.json(await getSettings())
+  }),
+)
+
+const syncItemSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().nullable().optional(),
+  displayName: z.string().optional(),
+  type: z.string().min(1),
+  quality: z.string().min(1),
+  quantity: z.number().nullable().optional(),
+  isCorrupted: z.boolean().optional(),
+  capturedAt: z.string().optional(),
+  category: z.string().optional(),
+  analysisProfile: z.string().optional(),
+  analysisTags: z.array(z.string()).optional(),
+  iLevel: z.number().int().optional(),
+  location: z.string().optional(),
+  defense: z.number().nullable().optional(),
+  stats: z
+    .array(
+      z.object({
+        statName: z.string().min(1),
+        statValue: z.number().nullable().optional(),
+        rangeMin: z.number().nullable().optional(),
+        rangeMax: z.number().nullable().optional(),
+      }),
+    )
+    .optional(),
 })
 
-app.get('/api/settings', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
-  res.json(getSettings())
+const syncBody = z.object({
+  items: z.array(syncItemSchema).optional(),
+  settings: settingsBody.optional(),
 })
 
-const settingsBody = z.object({
-  overlay_item_limit: z.number().int().min(1).max(20).optional(),
-  overlay_position: z.enum(['right', 'left', 'bottom']).optional(),
-  overlay_opacity: z.number().min(0.1).max(1).optional(),
-  overlay_title: z.string().max(60).optional(),
-  overlay_title_enabled: z.boolean().optional(),
-  overlay_title_size: z.number().int().min(12).max(36).optional(),
-  overlay_title_color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
-  overlay_title_background_color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
-  overlay_title_padding: z.number().int().min(0).max(24).optional(),
-  theme: z.enum(['light', 'dark']).optional(),
-  qr_public_enabled: z.boolean().optional(),
-  qr_token: z.union([z.string().regex(/^[a-f0-9]{32}$/i), z.literal('')]).optional(),
-})
+app.post(
+  '/api/sync',
+  asyncHandler(async (req, res) => {
+    const payload = syncBody.parse(req.body)
+    let importedItems = 0
+    if (payload.items && payload.items.length > 0) {
+      for (const item of payload.items) {
+        const rawItem = {
+          name: item.name ?? item.displayName,
+          type: item.type,
+          iLevel: item.iLevel ?? 0,
+          location: item.location ?? 'Unknown',
+          quality: item.quality,
+          defense: item.defense ?? undefined,
+          quantity: item.quantity ?? undefined,
+          corrupted: item.isCorrupted ?? false,
+          stats:
+            item.stats?.map((stat) => ({
+              name: stat.statName,
+              value: stat.statValue ?? undefined,
+              range:
+                stat.rangeMin !== null && stat.rangeMax !== null
+                  ? {
+                      min: stat.rangeMin,
+                      max: stat.rangeMax,
+                    }
+                  : undefined,
+            })) ?? [],
+        }
 
-app.put('/api/settings', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
-  try {
-    const patch = settingsBody.parse(req.body)
-    const updated = updateSettings(patch)
-    res.json(updated)
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid settings payload', detail: error instanceof Error ? error.message : 'unknown' })
-  }
-})
+        try {
+          const result = await ingestClipboardJson(JSON.stringify(rawItem))
+          if (result.inserted) {
+            importedItems += 1
+          }
+        } catch (error) {
+          console.warn('[api] sync item failed', error)
+        }
+      }
+    }
 
-app.get('/api/items/:id', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
-  const item = getItemById(req.params.id)
-  if (!item) {
-    res.status(404).json({ message: 'Item not found' })
-    return
-  }
+    let importedSettings = false
+    if (payload.settings) {
+      await updateSettings(payload.settings)
+      importedSettings = true
+    }
 
-  const rawThumbnail = item.thumbnail ?? 'generic/item_unknown.svg'
-  const normalizedThumbnail = rawThumbnail.startsWith('/icons/') ? rawThumbnail : `/icons/${rawThumbnail}`
-  res.json({
-    ...item,
-    thumbnail: normalizedThumbnail,
-  })
-})
+    res.json({ imported_items: importedItems, imported_settings: importedSettings })
+  }),
+)
 
-app.delete('/api/items/:id', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
+app.put(
+  '/api/settings',
+  asyncHandler(async (req, res) => {
+    const allowGuestSettings = allowGuestLocalApi && isLocalRequest(req)
+    if (!allowGuestSettings && !(await requireAuthenticatedUser(req, res))) {
+      return
+    }
+    try {
+      const patch = settingsBody.parse(req.body)
+      const updated = await updateSettings(patch)
+      console.info('[settings] updated', {
+        overlayMinimalMode: updated.overlay_minimal_mode,
+        overlayItemLimit: updated.overlay_item_limit,
+        overlayTitleEnabled: updated.overlay_title_enabled,
+        requestMode: allowGuestSettings ? 'guest-local' : 'authenticated',
+        timestamp: new Date().toISOString(),
+      })
+      res.json(updated)
+    } catch (error) {
+      res
+        .status(400)
+        .json({ message: 'Invalid settings payload', detail: error instanceof Error ? error.message : 'unknown' })
+    }
+  }),
+)
 
-  const deleted = deleteItemById(req.params.id)
-  if (!deleted) {
-    res.status(404).json({ message: 'Item not found' })
-    return
-  }
+app.get(
+  '/api/items/:id',
+  asyncHandler(async (req, res) => {
+    const itemId = readParam(req.params.id)
+    const item = await getItemById(itemId)
+    if (!item) {
+      res.status(404).json({ message: 'Item not found' })
+      return
+    }
 
-  res.json({ deleted: true })
-})
+    const rawThumbnail = item.thumbnail ?? 'generic/item_unknown.svg'
+    const normalizedThumbnail = rawThumbnail.startsWith('/icons/') ? rawThumbnail : `/icons/${rawThumbnail}`
+    res.json({
+      ...item,
+      thumbnail: normalizedThumbnail,
+    })
+  }),
+)
 
-app.delete('/api/items', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
+app.delete(
+  '/api/items/:id',
+  asyncHandler(async (req, res) => {
+    const itemId = readParam(req.params.id)
+    const deleted = await deleteItemById(itemId)
+    if (!deleted) {
+      res.status(404).json({ message: 'Item not found' })
+      return
+    }
 
-  const result = clearAllItems()
-  res.json({ deleted_items: result.deletedItems })
-})
+    res.json({ deleted: true })
+  }),
+)
 
-app.get('/api/events/items', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
-  res.setHeader('Content-Type', 'text/event-stream')
-  res.setHeader('Cache-Control', 'no-cache')
-  res.setHeader('Connection', 'keep-alive')
-  res.flushHeaders()
+app.delete(
+  '/api/items',
+  asyncHandler(async (_req, res) => {
+    const result = await clearAllItems()
+    res.json({ deleted_items: result.deletedItems })
+  }),
+)
+
+app.get(
+  '/api/events/items',
+  asyncHandler(async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.setHeader('Connection', 'keep-alive')
+    res.flushHeaders()
 
   let closed = false
   const safeWrite = (chunk: string): boolean => {
@@ -424,31 +669,32 @@ app.get('/api/events/items', (req, res) => {
     }
   }, 15000)
 
-  req.on('close', () => {
-    closeStream()
-  })
+    req.on('close', () => {
+      closeStream()
+    })
 
-  req.on('error', () => {
-    closeStream()
-  })
-})
+    req.on('error', () => {
+      closeStream()
+    })
+  }),
+)
 
 const ingestBody = z.object({
   payload: z.string().min(2),
 })
 
-app.post('/api/ingest', (req, res) => {
-  if (rejectIfNotLocal(req, res)) {
-    return
-  }
-  try {
-    const { payload } = ingestBody.parse(req.body)
-    const result = captureClipboardPayload(payload)
-    res.json(result)
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid payload', detail: error instanceof Error ? error.message : 'unknown' })
-  }
-})
+app.post(
+  '/api/ingest',
+  asyncHandler(async (req, res) => {
+    try {
+      const { payload } = ingestBody.parse(req.body)
+      const result = await captureClipboardPayload(payload)
+      res.json(result)
+    } catch (error) {
+      res.status(400).json({ message: 'Invalid payload', detail: error instanceof Error ? error.message : 'unknown' })
+    }
+  }),
+)
 
 const clipboardMonitorEnabled = process.env.ENABLE_CLIPBOARD_MONITOR !== 'false'
 const stopClipboardMonitor = clipboardMonitorEnabled ? startClipboardMonitor() : null
@@ -456,6 +702,8 @@ const stopClipboardMonitor = clipboardMonitorEnabled ? startClipboardMonitor() :
 const server = app.listen(port, host, () => {
   console.log(`[api] listening on http://${host}:${port}`)
   console.log(`[clipboard] monitor ${clipboardMonitorEnabled ? 'enabled' : 'disabled'}`)
+  console.log(`[supabase] ${supabaseConfigured ? 'configured' : 'not configured (fallback mode)'}`)
+  console.log(`[api] guest local api access ${allowGuestLocalApi ? 'enabled' : 'disabled'}`)
 })
 
 process.on('SIGINT', () => {

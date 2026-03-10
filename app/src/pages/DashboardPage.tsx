@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { clearItems, deleteItem, fetchItemDetail, fetchRecentItems, fetchSettings } from '../lib/api'
+import { getItemVisualState } from '../lib/item-visual-state'
 import type { AppSettings, ItemDetail, ItemSummary } from '../lib/types'
 import { getStatToneClass } from '../lib/item-stat-tone'
+import { useAuth } from '../lib/auth-context'
 import { useItemCaptureRefresh } from '../lib/use-item-capture-refresh'
 import { resolveItemTheme } from '../theme/resolveItemTheme'
 
@@ -56,6 +58,7 @@ function buildCompactText(item: ItemDetail): string {
 }
 
 export function DashboardPage() {
+  const { session } = useAuth()
   const [items, setItems] = useState<ItemSummary[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -123,9 +126,14 @@ export function DashboardPage() {
     }
   }, [loadItems])
 
-  useItemCaptureRefresh(loadItems)
+  useItemCaptureRefresh(loadItems, { enabled: true })
 
   useEffect(() => {
+    if (!session) {
+      setSettings(null)
+      return
+    }
+
     let disposed = false
 
     fetchSettings()
@@ -145,7 +153,7 @@ export function DashboardPage() {
     return () => {
       disposed = true
     }
-  }, [])
+  }, [session])
 
   useEffect(() => {
     if (!selectedId) {
@@ -204,6 +212,13 @@ export function DashboardPage() {
       analysisTags: selectedItem.analysisTags,
       stats: selectedItem.stats,
     })
+  }, [selectedItem])
+
+  const selectedVisualState = useMemo(() => {
+    if (!selectedItem) {
+      return { isEthereal: false, socketCount: null }
+    }
+    return getItemVisualState({ analysisTags: selectedItem.analysisTags, stats: selectedItem.stats })
   }, [selectedItem])
 
   const onCopy = async (label: string, value: string) => {
@@ -392,23 +407,31 @@ export function DashboardPage() {
       <section className="d2-panel dashboard-qr" aria-label="QR share panel">
         <div className="dashboard-qr__header">
           <h3>Today QR</h3>
-          <button
-            type="button"
-            className="d2-button d2-button--secondary d2-button--sm"
-            onClick={() => setShowQr((prev) => !prev)}
-          >
-            {showQr ? 'Hide QR' : 'Show QR'}
-          </button>
+          {session ? (
+            <button
+              type="button"
+              className="d2-button d2-button--secondary d2-button--sm"
+              onClick={() => setShowQr((prev) => !prev)}
+            >
+              {showQr ? 'Hide QR' : 'Show QR'}
+            </button>
+          ) : null}
         </div>
-        <p>Viewer page link for mobile access.</p>
-        <p>
-          <strong>Share URL:</strong> {qrLink}
-        </p>
-        <button type="button" className="d2-button d2-button--primary" onClick={() => onCopy('today-link', qrLink)}>
-          Copy Today Link
-        </button>
-        {settingsError ? <p>{settingsError}</p> : null}
-        {showQr && qrDataUrl ? <img src={qrDataUrl} alt="Today page QR code" className="dashboard-qr__image" /> : null}
+        {session ? (
+          <>
+            <p>Viewer page link for mobile access.</p>
+            <p>
+              <strong>Share URL:</strong> {qrLink}
+            </p>
+            <button type="button" className="d2-button d2-button--primary" onClick={() => onCopy('today-link', qrLink)}>
+              Copy Today Link
+            </button>
+            {settingsError ? <p>{settingsError}</p> : null}
+            {showQr && qrDataUrl ? <img src={qrDataUrl} alt="Today page QR code" className="dashboard-qr__image" /> : null}
+          </>
+        ) : (
+          <p>로그인한 사용자만 공유 링크/QR을 사용할 수 있습니다.</p>
+        )}
       </section>
 
       <div className="dashboard-layout">
@@ -445,6 +468,7 @@ export function DashboardPage() {
               analysisProfile: item.analysisProfile,
               analysisTags: item.analysisTags,
             })
+            const visualState = getItemVisualState({ analysisTags: item.analysisTags })
 
             return (
               <button
@@ -462,13 +486,23 @@ export function DashboardPage() {
                   onClick={(event) => event.stopPropagation()}
                 />
                 {item.thumbnail ? (
-                  <img className="dashboard-row__thumb" src={item.thumbnail} alt={item.displayName} />
+                  <img
+                    className={`dashboard-row__thumb${visualState.isEthereal ? ' is-ethereal' : ''}`}
+                    src={item.thumbnail}
+                    alt={item.displayName}
+                  />
                 ) : null}
                 <div className="dashboard-row__content">
                   <strong className="item-theme-name">{item.displayName}</strong>
                   <span>{item.quality}</span>
                   <span>Qty: {item.quantity ?? 1}</span>
-                  {item.isCorrupted ? <span className="dashboard-badge">Corrupted</span> : null}
+                  <div className="item-theme-badges">
+                    {item.isCorrupted ? <span className="item-theme-badge corrupted-badge">Corrupted</span> : null}
+                    {visualState.isEthereal ? <span className="item-theme-badge ethereal-badge">Ethereal</span> : null}
+                    {visualState.socketCount !== null ? (
+                      <span className="item-theme-badge socket-badge">Socketed ({visualState.socketCount})</span>
+                    ) : null}
+                  </div>
                 </div>
               </button>
             )
@@ -486,14 +520,26 @@ export function DashboardPage() {
           {selectedItem ? (
             <>
               {selectedItem.thumbnail ? (
-                <img className="item-thumbnail" src={selectedItem.thumbnail} alt={selectedItem.displayName} />
+                <img
+                  className={`item-thumbnail${selectedVisualState.isEthereal ? ' is-ethereal' : ''}`}
+                  src={selectedItem.thumbnail}
+                  alt={selectedItem.displayName}
+                />
               ) : null}
               <p>
-                Name: <strong className="item-theme-name">{selectedItem.name ?? selectedItem.displayName}</strong>
+                Name:{' '}
+                <strong className="item-theme-name">
+                  {selectedItem.name ?? selectedItem.displayName}
+                </strong>
               </p>
               {selectedTheme ? (
                 <div className="item-theme-badges">
                   <span className="item-theme-badge">{selectedTheme.rule.label}</span>
+                  {selectedItem.isCorrupted ? <span className="item-theme-badge corrupted-badge">Corrupted</span> : null}
+                  {selectedVisualState.isEthereal ? <span className="item-theme-badge ethereal-badge">Ethereal</span> : null}
+                  {selectedVisualState.socketCount !== null ? (
+                    <span className="item-theme-badge socket-badge">Socketed ({selectedVisualState.socketCount})</span>
+                  ) : null}
                 </div>
               ) : null}
               <p>Type: {selectedItem.type}</p>
@@ -504,7 +550,7 @@ export function DashboardPage() {
                 <h4>Stats</h4>
                 {selectedItem.stats.length === 0 ? <p>No stats</p> : null}
                 {selectedItem.stats.map((stat, idx) => (
-                  <p key={`${stat.statName}-${idx}`} className="item-theme-stat">
+                  <p key={`${stat.statName}-${idx}`} className={`item-theme-stat${stat.isCorrupted ? ' is-corrupted' : ''}`}>
                     {stat.statValue === null ? (
                       <span className={`item-theme-stat-label${getStatToneClass(stat.statName)}`}>
                         {stat.statName}

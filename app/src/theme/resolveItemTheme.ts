@@ -136,7 +136,7 @@ function toThemeStyle(theme: ItemThemeTokens): CSSProperties {
     '--item-theme-badge-bg': theme.badgeBg,
     '--item-theme-badge-text': theme.badgeText,
     '--item-theme-glow': theme.glow,
-  }
+  } as CSSProperties
 }
 
 export function resolveItemTheme(item: ItemThemeInput): ResolvedItemTheme {

@@ -1,8 +1,8 @@
 import { ingestClipboardJson } from './ingestion'
 import { emitItemCaptured } from './item-events'
 
-export function captureClipboardPayload(payload: string): { inserted: boolean; id: string | null } {
-  const result = ingestClipboardJson(payload)
+export async function captureClipboardPayload(payload: string): Promise<{ inserted: boolean; id: string | null }> {
+  const result = await ingestClipboardJson(payload)
   if (!result.inserted || !result.id || !result.capturedAt || !result.displayName) {
     return { inserted: result.inserted, id: result.id }
   }

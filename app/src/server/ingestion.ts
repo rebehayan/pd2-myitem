@@ -56,6 +56,74 @@ function isCorrupted(item: RawClipboardItem): boolean {
   return byCorruptedFlag || byCorruptName || topLevelFlag
 }
 
+function unwrapSourceItem(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  if ('item' in value) {
+    const nested = (value as { item?: unknown }).item
+    if (nested && typeof nested === 'object') {
+      return nested as Record<string, unknown>
+    }
+  }
+
+  return value as Record<string, unknown>
+}
+
+function parseSocketCountFromValue(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 0) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim())
+    if (Number.isInteger(parsed) && parsed >= 0) {
+      return parsed
+    }
+  }
+
+  return null
+}
+
+function detectSocketCount(item: RawClipboardItem, parsedSource: unknown): number | null {
+  const source = unwrapSourceItem(parsedSource)
+  if (source) {
+    const direct =
+      parseSocketCountFromValue(source.sockets) ??
+      parseSocketCountFromValue(source.socket_count) ??
+      parseSocketCountFromValue(source.socketCount)
+    if (direct !== null) {
+      return direct
+    }
+  }
+
+  const socketPattern = /(?:socketed\s*\(?|\()\s*(\d+)\s*sockets?\)?/i
+  for (const stat of item.stats ?? []) {
+    const matched = socketPattern.exec(stat.name)
+    if (!matched) {
+      continue
+    }
+    const parsed = Number(matched[1])
+    if (Number.isInteger(parsed) && parsed >= 0) {
+      return parsed
+    }
+  }
+
+  return null
+}
+
+function detectEthereal(item: RawClipboardItem, parsedSource: unknown): boolean {
+  const source = unwrapSourceItem(parsedSource)
+  const sourceEthereal = source?.ethereal
+  const bySource =
+    sourceEthereal === true ||
+    sourceEthereal === 1 ||
+    (typeof sourceEthereal === 'string' && sourceEthereal.trim().toLowerCase() === 'true')
+  const byStats = (item.stats ?? []).some((stat) => stat.name.trim().toLowerCase().includes('ethereal'))
+  return bySource || byStats
+}
+
 function normalizeItem(item: RawClipboardItem, rawJson: string, parsedSource: unknown): ParsedItem {
   const safeStats = item.stats ?? []
   const corrupted = isCorrupted(item)
@@ -68,6 +136,8 @@ function normalizeItem(item: RawClipboardItem, rawJson: string, parsedSource: un
     isCorrupted: corrupted,
   })
   const analysis = analyzeBySampleCases(item)
+  const isEthereal = detectEthereal(item, parsedSource)
+  const socketCount = detectSocketCount(item, parsedSource)
 
   return {
     name: item.name ?? null,
@@ -88,6 +158,9 @@ function normalizeItem(item: RawClipboardItem, rawJson: string, parsedSource: un
       `thumbnail_frame:${thumbnail.qualityFrame}`,
       thumbnail.badges.corrupted ? 'thumbnail_badge:corrupted' : 'thumbnail_badge:none',
       thumbnail.badges.quantity ? 'thumbnail_badge:quantity' : 'thumbnail_badge:no_quantity',
+      isEthereal ? 'ethereal' : 'non-ethereal',
+      socketCount !== null ? 'socketed' : 'socketed:none',
+      socketCount !== null ? `sockets:${socketCount}` : 'sockets:none',
     ],
     stats: safeStats.map((stat) => ({
       statName: stat.name,
@@ -102,7 +175,7 @@ function normalizeItem(item: RawClipboardItem, rawJson: string, parsedSource: un
   }
 }
 
-export function ingestClipboardJson(rawJson: string): SaveParsedItemResult {
+export async function ingestClipboardJson(rawJson: string): Promise<SaveParsedItemResult> {
   const parsedUnknown = JSON.parse(rawJson) as unknown
   const parsedItemResult = itemSchema.safeParse(parsedUnknown)
   let parsedItem: RawClipboardItem
