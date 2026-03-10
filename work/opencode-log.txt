@@ -177,3 +177,7 @@ Vercel 설정:
 
 비고:
 - 폰트 경로 관련 Vite 경고(`didn't resolve at build time`)는 기존과 동일하며 빌드 실패를 유발하지 않음.
+
+Git 반영 결과:
+- 커밋: `6494b1b` (`chore: record latest build verification status`)
+- 푸시: `main -> origin/main` 반영 완료
