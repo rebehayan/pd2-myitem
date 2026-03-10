@@ -1,0 +1,179 @@
+Supabase Auth + DB 적용 완료.
+
+주요 변경:
+- Supabase 클라이언트/서버 SDK 추가 및 인증 컨텍스트 구성: app/src/lib/supabase.ts, app/src/lib/auth.tsx
+- 로그인 페이지 추가 및 라우팅 연결: app/src/pages/LoginPage.tsx, app/src/App.tsx, app/src/main.tsx
+- API 요청에 Bearer 토큰 자동 첨부 + SSE는 ?token= 지원: app/src/lib/api.ts, app/src/lib/use-item-capture-refresh.ts
+- 서버 저장소를 Supabase DB로 전환: app/src/server/repository.ts, app/src/server/settings-repository.ts, app/src/server/supabase.ts
+- API 인증 미들웨어 추가 (public은 /api/health, /api/today/public만 허용): app/src/server/index.ts
+- Supabase 스키마 SQL 추가: app/docs/supabase-schema.sql
+- README에 Supabase env 및 스키마 안내 추가: app/README.md
+
+Supabase에서 필요한 정보:
+1) Project URL (예: https://your-project.supabase.co)
+2) Anonymous Public Key (VITE_SUPABASE_ANON_KEY)
+3) Service Role Key (SUPABASE_SERVICE_ROLE_KEY)
+
+필수 설정(.env):
+VITE_SUPABASE_URL=<Project URL>
+VITE_SUPABASE_ANON_KEY=<Anon Key>
+SUPABASE_URL=<Project URL>
+SUPABASE_SERVICE_ROLE_KEY=<Service Role Key>
+MASTER_USER_ID=ce5b52cd-988b-4dfb-b384-280dba78cd41
+
+내가 해야 할 일 (체크리스트):
+1) Supabase SQL 적용: app/docs/supabase-schema.sql
+2) (선택) 마스터 전용 RLS 적용: app/docs/supabase-rls.sql
+3) Supabase Auth Providers에서 Google 활성화
+4) Site URL 등록
+   - 로컬: http://localhost:5173
+   - 프로덕션: https://pd2-chi.vercel.app
+5) Redirect URLs 등록 (필요한 경로 추가)
+6) app/.env에 아래 키 설정 확인
+   - VITE_SUPABASE_URL
+   - VITE_SUPABASE_ANON_KEY
+   - SUPABASE_URL
+   - SUPABASE_SERVICE_ROLE_KEY
+   - MASTER_USER_ID=ce5b52cd-988b-4dfb-b384-280dba78cd41 (선택)
+7) 로컬 실행 확인: npm --prefix app run dev
+
+체크리스트 (root .env -> app/.env 복사 권장):
+- VITE_SUPABASE_URL 설정됨
+- VITE_SUPABASE_ANON_KEY 설정됨
+- SUPABASE_URL 설정됨
+- SUPABASE_SERVICE_ROLE_KEY 설정됨
+- MASTER_USER_ID 설정됨 (선택)
+
+Google 로그인 설정:
+1) Supabase 콘솔 > Authentication > Providers > Google 활성화
+2) Site URL에 앱 도메인 등록
+   - 로컬: http://localhost:5173
+   - 프로덕션: https://pd2-chi.vercel.app
+3) Redirect URLs에 필요한 경로 추가
+
+게스트 모드 및 로컬 저장 전환 완료.
+
+주요 변경:
+- 로그인 강제 리다이렉트 제거 및 게스트 모드 표시: app/src/App.tsx
+- 비로그인 시 로컬스토리지 기반 CRUD 동작: app/src/lib/api.ts, app/src/lib/local-store.ts
+- 회원가입 후 로컬 데이터 서버 동기화 플래그 설정: app/src/pages/LoginPage.tsx
+- 로그인 시 로컬→서버 동기화 실행: app/src/lib/auth.tsx
+- 서버 동기화 엔드포인트 추가: app/src/server/index.ts
+- 설정 기본값 공용화: app/src/lib/settings-defaults.ts, app/src/pages/SettingsPage.tsx
+- SSE 갱신은 로그인 시에만 동작: app/src/pages/DashboardPage.tsx, app/src/pages/TodayPage.tsx, app/src/pages/OverlayPage.tsx
+
+동작 요약:
+1) 비로그인 사용자는 로컬스토리지에만 저장.
+2) 회원가입한 사용자는 로그인 후 로컬 데이터를 서버로 1회 동기화.
+3) 처음부터 로그인한 사용자는 서버 저장만 사용.
+
+Today 메뉴 용도:
+- /today 공개 페이지에서 오늘 획득한 아이템 목록과 통계를 보여주는 뷰어 페이지.
+
+2026-03-10 OBS 오버레이 미니멀 반영 이슈 처리 결과
+
+증상:
+- OBS Browser Source에서 캐시 새로고침을 해도 미니멀 모드가 반영되지 않음.
+
+원인 분석:
+- OverlayPage가 서버 설정값을 받은 뒤에도 localStorage(`overlay_minimal_mode`)를 항상 우선 적용하는 경로가 있어,
+  OBS CEF 저장소의 오래된 값이 서버값을 덮어쓸 수 있었음.
+- `/api/overlay` 응답에 캐시 방지 헤더가 명시적이지 않아 OBS/중간 캐시 환경에서 반영 지연 가능성이 있었음.
+
+수정 내용:
+1) 미니멀 모드 적용 우선순위 수정
+   - 파일: app/src/pages/OverlayPage.tsx
+   - 변경: local override는 `overlay_title_preview_active === true` (설정 미리보기 모드)일 때만 적용.
+   - 효과: OBS 일반 표시에서는 서버 `/api/overlay`의 `overlay_minimal_mode`가 우선 적용됨.
+
+2) 오버레이 응답 캐시 무효화 헤더 추가
+   - 파일: app/src/server/index.ts (`GET /api/overlay`)
+   - 헤더:
+     - Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate
+     - Pragma: no-cache
+     - Expires: 0
+
+3) 처리결과 로그 추가(기존 반영분 포함)
+   - 파일: app/src/server/index.ts
+   - `[overlay] payload generated` 로그: minimalMode, itemCount, requestMode, userAgent, timestamp
+   - `[settings] updated` 로그: overlayMinimalMode, overlayItemLimit, overlayTitleEnabled, requestMode, timestamp
+   - 파일: app/src/pages/OverlayPage.tsx
+   - 브라우저 콘솔 `[overlay] applied minimal mode` 로그: source(api-overlay/settings/local-override), minimalMode
+
+추가 조치(게스트 로컬 환경 반영성 강화):
+- 파일: app/src/server/index.ts
+- 로컬 요청 + ALLOW_GUEST_LOCAL_API 허용 시 `/api/settings` GET/PUT도 허용하도록 수정.
+
+검증 결과:
+- app 기준 `npm run typecheck` 통과
+- app 기준 `npm run lint` 통과
+- app 기준 `npm run build` 통과
+
+OBS 확인 포인트:
+1) 설정 저장 후 서버 콘솔에서 `[settings] updated`의 `overlayMinimalMode` 값 확인
+2) OBS 소스 새로고침 후 서버 콘솔에서 `[overlay] payload generated`의 `minimalMode` 값 확인
+3) 두 값이 true인데도 화면이 동일하면 OBS 소스 URL이 실제 앱 URL(`localhost/127.0.0.1`)인지 재확인
+
+추가 보강(localhost:5173/overlay 기준):
+- 파일: app/src/pages/OverlayPage.tsx
+- OBS User-Agent에서는 `overlay_title_preview_active`를 무시하도록 처리.
+- 목적: OBS CEF 저장소에 남아있는 preview localStorage 값이 서버 `overlay_minimal_mode`를 덮어쓰는 문제 차단.
+
+2026-03-10 배포/저장소 현재상황
+
+GitHub 업로드:
+- 브랜치 `main`에 개발 산출물 업로드 완료 (Markdown 제외 요청 반영).
+- 반영 커밋:
+  - `fe9646f` feat: add auth sync pipeline and harden OBS overlay behavior
+  - `6fd5dfd` chore: ignore vercel local metadata
+
+Vercel 설정:
+- 프로젝트: `rebehayans-projects/app`
+- 프로젝트 ID: `prj_UJtLa0bdA2sa88WLt95IDLzlllpe`
+- Root Directory를 `app`으로 변경 완료.
+- 검증: `vercel project inspect app`에서 `Root Directory app` 확인.
+
+배포 상태:
+- Vercel 프로덕션 배포는 계정 업로드 제한(`api-upload-free`, 24시간)으로 현재 차단됨.
+- `--archive=tgz`, `--prebuilt` 경로 포함해 재시도했으나 동일 제한으로 실패.
+
+작업트리 참고:
+- 문서/로컬 메모 파일(`*.md`, `work/opencode-log.txt`, 일부 docs 변경, `app/.env`)은 의도적으로 미커밋 상태 유지.
+
+2026-03-10 Vercel 빌드 상태 추가 점검
+
+사용자 제공 로그:
+- "Running build in Washington, D.C., USA (East) - iad1"
+- "Running vercel build"
+- "Installing dependencies..."
+
+확인 결과:
+- 프로젝트 `rebehayans-projects/app` 기준으로 Vercel API 조회 시 배포 레코드가 아직 0건.
+- 조회 엔드포인트: `/v6/deployments?projectId=prj_UJtLa0bdA2sa88WLt95IDLzlllpe&limit=5`
+- 응답: `deployments: []`
+
+해석:
+- 현재 로그는 빌드 초기 단계이며, 배포 엔트리가 생성되기 전 상태이거나
+  다른 프로젝트/스코프에서 동작 중일 가능성이 있음.
+
+설정 상태(이미 반영됨):
+- Root Directory: `app`
+- Install Command: `npm install --include=dev`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+2026-03-10 빌드 테스트 및 Git 반영 요청 처리
+
+실행 내용:
+- 루트에서 빌드 테스트 실행: `npm run build`
+
+결과:
+- 빌드 성공 (exit code 0)
+- `app@0.0.0 build -> npm run typecheck && vite build` 정상 완료
+- 산출물 생성 확인:
+  - `dist/index.html`
+  - `dist/assets/index-r2ivv0Q_.css`
+  - `dist/assets/index-Dw3AH7qW.js`
+
+비고:
+- 폰트 경로 관련 Vite 경고(`didn't resolve at build time`)는 기존과 동일하며 빌드 실패를 유발하지 않음.
