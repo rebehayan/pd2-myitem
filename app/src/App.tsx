@@ -3,6 +3,7 @@ import './App.css'
 import './components/d2-ui.css'
 import { DashboardPage } from './pages/DashboardPage'
 import { D2KitPage } from './pages/D2KitPage'
+import { GuidePage } from './pages/GuidePage'
 import { ItemDetailPage } from './pages/ItemDetailPage'
 import { LoginPage } from './pages/LoginPage'
 import { OverlayPage } from './pages/OverlayPage'
@@ -28,6 +29,7 @@ function App() {
           dashboard: '대시보드',
           overlay: '오버레이',
           today: '투데이',
+          guide: '가이드',
           settings: '설정',
           languageButton: 'English',
         }
@@ -42,6 +44,7 @@ function App() {
           dashboard: 'Dashboard',
           overlay: 'Overlay',
           today: 'Today',
+          guide: 'Guide',
           settings: 'Settings',
           languageButton: '한국어',
         }
@@ -101,11 +104,14 @@ function App() {
       </header>
 
       <nav className="shell__nav" aria-label="Main navigation">
-        <NavLink to="/">{text.dashboard}</NavLink>
+        <NavLink to="/" end>
+          {text.dashboard}
+        </NavLink>
         <a href="/overlay" target="_blank" rel="noreferrer">
           {text.overlay}
         </a>
         <NavLink to="/today">{text.today}</NavLink>
+        <NavLink to="/guide">{text.guide}</NavLink>
         <NavLink to="/settings">{text.settings}</NavLink>
       </nav>
 
@@ -115,6 +121,7 @@ function App() {
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/overlay" element={<OverlayPage />} />
           <Route path="/today" element={<TodayPage />} />
+          <Route path="/guide/*" element={<GuidePage />} />
           <Route path="/kit" element={<D2KitPage />} />
           <Route path="/item/:id" element={<ItemDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />

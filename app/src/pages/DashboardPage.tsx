@@ -66,6 +66,8 @@ export function DashboardPage() {
       ? {
           title: '대시보드',
           subtitle: '아이템 검색, 상세 확인, 공유 텍스트 생성을 한 화면에서 처리합니다.',
+          guidePrompt: '처음이라면 사용자 가이드에서 설정/운영 순서를 먼저 확인하세요.',
+          openGuide: '사용자 가이드 열기',
           searchPlaceholder: 'Search by name, type, quality',
           qrTitle: '투데이 QR',
           showQr: 'QR 보기',
@@ -110,6 +112,8 @@ export function DashboardPage() {
       : {
           title: 'Dashboard',
           subtitle: 'Search items, inspect details, and generate share text in one place.',
+          guidePrompt: 'New here? Open the user guide for setup and operation flow.',
+          openGuide: 'Open User Guide',
           searchPlaceholder: 'Search by name, type, quality',
           qrTitle: 'Today QR',
           showQr: 'Show QR',
@@ -484,6 +488,12 @@ export function DashboardPage() {
     <section className="d2-panel d2-ui">
       <h2>{text.title}</h2>
       <p>{text.subtitle}</p>
+      <div className="dashboard-list__actions">
+        <span>{text.guidePrompt}</span>
+        <Link to="/guide" className="d2-button d2-button--secondary d2-button--sm">
+          {text.openGuide}
+        </Link>
+      </div>
       {error ? <p>{error}</p> : null}
 
       <div className="dashboard-search">

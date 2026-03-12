@@ -1022,3 +1022,86 @@ body.overlay-mode {
     grid-template-columns: 1fr;
   }
 }
+
+.guide-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.guide-section {
+  border: 1px solid rgba(116, 92, 41, 0.7);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(8, 9, 13, 0.88), rgba(4, 5, 9, 0.9));
+  padding: 0.8rem;
+}
+
+.guide-section h3 {
+  margin: 0 0 0.5rem;
+  font-family: var(--d2-font-display);
+  color: var(--d2-gold-0);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.92rem;
+}
+
+.guide-list,
+.guide-steps {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  color: var(--d2-ash-1);
+}
+
+.guide-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.guide-item strong {
+  color: var(--d2-gold-0);
+  letter-spacing: 0.03em;
+}
+
+.guide-item p {
+  margin: 0;
+  color: var(--d2-ash-0);
+}
+
+.guide-list--compact {
+  gap: 0.35rem;
+}
+
+.guide-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.guide-flow-card {
+  border: 1px solid rgba(229, 200, 116, 0.28);
+  border-radius: 8px;
+  background: rgba(10, 11, 16, 0.72);
+  padding: 0.65rem;
+}
+
+.guide-flow-card h4 {
+  margin: 0 0 0.45rem;
+  color: var(--d2-gold-0);
+  font-family: var(--d2-font-display);
+  letter-spacing: 0.04em;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 640px) {
+  .guide-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-section {
+    padding: 0.65rem;
+  }
+}
