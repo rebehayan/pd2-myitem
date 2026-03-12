@@ -84,7 +84,6 @@ OBS overlay 전용 데이터. 최근 N개 아이템 반환.
   "overlay_item_limit": 10,
   "overlay_position": "right",
   "overlay_opacity": 0.8,
-  "theme": "light",
   "qr_public_enabled": true,
   "qr_token": "8fa3d92c41c0eab52e0a1f7f1d8d1c31"
 }

@@ -80,6 +80,11 @@ This project supports public viewer access for the Today page through `GET /api/
 
 - `API_PORT=4310`
 - `VITE_API_BASE=` (same-origin deploy) or `VITE_API_BASE=https://api.your-domain.com`
+- `VITE_SUPABASE_URL=https://your-project.supabase.co`
+- `VITE_SUPABASE_ANON_KEY=...`
+- `SUPABASE_URL=https://your-project.supabase.co`
+- `SUPABASE_SERVICE_ROLE_KEY=...`
+- `MASTER_USER_ID=...` (optional; when set, only this user can access private APIs)
 - `PUBLIC_ALLOWED_ORIGINS=https://your-domain.com`
 - `TRUST_PROXY_FOR_RATE_LIMIT=false` (set `true` only behind trusted reverse proxy)
 
@@ -93,6 +98,11 @@ Recommended `.env` values for this workspace (local dev):
 API_PORT=4310
 ENABLE_CLIPBOARD_MONITOR=true
 VITE_API_BASE=
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+MASTER_USER_ID=ce5b52cd-988b-4dfb-b384-280dba78cd41
 PUBLIC_ALLOWED_ORIGINS=http://127.0.0.1:5173,http://localhost:5173
 TRUST_PROXY_FOR_RATE_LIMIT=false
 ```
@@ -103,9 +113,27 @@ Recommended `.env` values for public viewer deployment:
 API_PORT=4310
 ENABLE_CLIPBOARD_MONITOR=true
 VITE_API_BASE=
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+MASTER_USER_ID=ce5b52cd-988b-4dfb-b384-280dba78cd41
 PUBLIC_ALLOWED_ORIGINS=https://your-domain.com
 TRUST_PROXY_FOR_RATE_LIMIT=true
 ```
+
+### 1.1) Supabase schema
+
+Apply the SQL in `app/docs/supabase-schema.sql` to your Supabase project (SQL editor or migrations).
+
+### 1.2) Supabase RLS (optional)
+
+If you want to enforce master-only access at the DB layer, apply `app/docs/supabase-rls.sql`.
+
+### 1.3) Google login
+
+Enable Google in Supabase Auth Providers. Set the Site URL to your app origin (for local dev: `http://localhost:5173`) and
+add redirect URLs as needed. The login page uses OAuth with redirectTo = window.location.origin.
 
 ### 2) Local run (dev)
 

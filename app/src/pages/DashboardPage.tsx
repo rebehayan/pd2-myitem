@@ -6,6 +6,7 @@ import { getItemVisualState } from '../lib/item-visual-state'
 import type { AppSettings, ItemDetail, ItemSummary } from '../lib/types'
 import { getStatToneClass } from '../lib/item-stat-tone'
 import { useAuth } from '../lib/auth-context'
+import { useUiLanguage } from '../lib/ui-language-context'
 import { useItemCaptureRefresh } from '../lib/use-item-capture-refresh'
 import { resolveItemTheme } from '../theme/resolveItemTheme'
 
@@ -59,6 +60,97 @@ function buildCompactText(item: ItemDetail): string {
 
 export function DashboardPage() {
   const { session } = useAuth()
+  const { language } = useUiLanguage()
+  const text =
+    language === 'ko'
+      ? {
+          title: '대시보드',
+          subtitle: '아이템 검색, 상세 확인, 공유 텍스트 생성을 한 화면에서 처리합니다.',
+          searchPlaceholder: 'Search by name, type, quality',
+          qrTitle: '투데이 QR',
+          showQr: 'QR 보기',
+          hideQr: 'QR 숨기기',
+          viewerLink: '모바일 접속용 뷰어 링크입니다.',
+          shareUrl: '공유 URL',
+          copyTodayLink: '투데이 링크 복사',
+          qrLoginOnly: '로그인한 사용자만 공유 링크/QR을 사용할 수 있습니다.',
+          recentItems: '최근 아이템',
+          selectAll: '전체 선택',
+          unselectAll: 'Unselect All',
+          deleteChecked: '선택 삭제',
+          noMatch: 'No matching items.',
+          itemDetail: '아이템 상세',
+          selectPrompt: 'Select an item to view details.',
+          quality: 'Quality',
+          qty: 'Qty',
+          type: 'Type',
+          itemLevel: 'Item Level',
+          defense: 'Defense',
+          location: 'Location',
+          stats: 'Stats',
+          noStats: 'No stats',
+          copyDiscord: 'Copy Discord',
+          copyReddit: 'Copy Reddit',
+          copyCompact: 'Copy Compact',
+          copiedFormat: 'Copied format',
+          deleteSelected: 'Delete Selected',
+          clearList: 'Clear List',
+          openFull: 'Open full detail page',
+          loadQrFail: 'QR 설정을 불러오지 못했습니다.',
+          confirmDeleteSelected: 'Delete selected item from the list?',
+          confirmDeleteChecked: 'Delete selected items?',
+          confirmClearAll: 'Delete all captured items from the list?',
+          selectedDeleted: 'Selected item deleted.',
+          deletedItems: 'item(s) deleted.',
+          deleteSelectedFail: 'Failed to delete selected item.',
+          deleteCheckedFail: 'Failed to delete selected items.',
+          clearFail: 'Failed to clear item list.',
+          name: 'Name',
+        }
+      : {
+          title: 'Dashboard',
+          subtitle: 'Search items, inspect details, and generate share text in one place.',
+          searchPlaceholder: 'Search by name, type, quality',
+          qrTitle: 'Today QR',
+          showQr: 'Show QR',
+          hideQr: 'Hide QR',
+          viewerLink: 'Viewer page link for mobile access.',
+          shareUrl: 'Share URL',
+          copyTodayLink: 'Copy Today Link',
+          qrLoginOnly: 'Only signed-in users can use share link/QR.',
+          recentItems: 'Recent Items',
+          selectAll: 'Select All',
+          unselectAll: 'Unselect All',
+          deleteChecked: 'Delete Checked',
+          noMatch: 'No matching items.',
+          itemDetail: 'Item Detail',
+          selectPrompt: 'Select an item to view details.',
+          quality: 'Quality',
+          qty: 'Qty',
+          type: 'Type',
+          itemLevel: 'Item Level',
+          defense: 'Defense',
+          location: 'Location',
+          stats: 'Stats',
+          noStats: 'No stats',
+          copyDiscord: 'Copy Discord',
+          copyReddit: 'Copy Reddit',
+          copyCompact: 'Copy Compact',
+          copiedFormat: 'Copied format',
+          deleteSelected: 'Delete Selected',
+          clearList: 'Clear List',
+          openFull: 'Open full detail page',
+          loadQrFail: 'Failed to load QR settings.',
+          confirmDeleteSelected: 'Delete selected item from the list?',
+          confirmDeleteChecked: 'Delete selected items?',
+          confirmClearAll: 'Delete all captured items from the list?',
+          selectedDeleted: 'Selected item deleted.',
+          deletedItems: 'item(s) deleted.',
+          deleteSelectedFail: 'Failed to delete selected item.',
+          deleteCheckedFail: 'Failed to delete selected items.',
+          clearFail: 'Failed to clear item list.',
+          name: 'Name',
+        }
   const [items, setItems] = useState<ItemSummary[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -147,13 +239,13 @@ export function DashboardPage() {
         if (disposed) {
           return
         }
-        setSettingsError('Failed to load QR settings.')
+        setSettingsError(text.loadQrFail)
       })
 
     return () => {
       disposed = true
     }
-  }, [session])
+  }, [session, text.loadQrFail])
 
   useEffect(() => {
     if (!selectedId) {
@@ -235,7 +327,7 @@ export function DashboardPage() {
     if (!selectedId || deleting) {
       return
     }
-    if (!window.confirm('Delete selected item from the list?')) {
+    if (!window.confirm(text.confirmDeleteSelected)) {
       return
     }
 
@@ -247,10 +339,10 @@ export function DashboardPage() {
       if (latest.length === 0) {
         setSelectedItem(null)
       }
-      setActionMessage('Selected item deleted.')
+      setActionMessage(text.selectedDeleted)
       window.setTimeout(() => setActionMessage(null), 1500)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete selected item.'
+      const message = err instanceof Error ? err.message : text.deleteSelectedFail
       setActionError(message)
     } finally {
       setDeleting(false)
@@ -292,7 +384,7 @@ export function DashboardPage() {
     if (deleting || selectedIds.size === 0) {
       return
     }
-    if (!window.confirm(`Delete ${selectedIds.size} selected item(s)?`)) {
+    if (!window.confirm(`${text.confirmDeleteChecked} (${selectedIds.size})`)) {
       return
     }
 
@@ -305,10 +397,10 @@ export function DashboardPage() {
         setSelectedItem(null)
       }
       setSelectedIds(new Set())
-      setActionMessage(`Deleted ${selectedIds.size} item(s).`)
+      setActionMessage(`${selectedIds.size} ${text.deletedItems}`)
       window.setTimeout(() => setActionMessage(null), 1500)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete selected items.'
+      const message = err instanceof Error ? err.message : text.deleteCheckedFail
       setActionError(message)
     } finally {
       setDeleting(false)
@@ -319,7 +411,7 @@ export function DashboardPage() {
     if (deleting) {
       return
     }
-    if (!window.confirm('Delete all captured items from the list?')) {
+    if (!window.confirm(text.confirmClearAll)) {
       return
     }
 
@@ -329,10 +421,10 @@ export function DashboardPage() {
       const deletedCount = await clearItems()
       await refreshItems()
       setSelectedItem(null)
-      setActionMessage(`Deleted ${deletedCount} item(s).`)
+      setActionMessage(`${deletedCount} ${text.deletedItems}`)
       window.setTimeout(() => setActionMessage(null), 1500)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to clear item list.'
+      const message = err instanceof Error ? err.message : text.clearFail
       setActionError(message)
     } finally {
       setDeleting(false)
@@ -390,14 +482,14 @@ export function DashboardPage() {
 
   return (
     <section className="d2-panel d2-ui">
-      <h2>Dashboard</h2>
-      <p>아이템 검색, 상세 확인, 공유 텍스트 생성을 한 화면에서 처리합니다.</p>
+      <h2>{text.title}</h2>
+      <p>{text.subtitle}</p>
       {error ? <p>{error}</p> : null}
 
       <div className="dashboard-search">
         <input
           type="text"
-          placeholder="Search by name, type, quality"
+          placeholder={text.searchPlaceholder}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           className="d2-input"
@@ -406,37 +498,37 @@ export function DashboardPage() {
 
       <section className="d2-panel dashboard-qr" aria-label="QR share panel">
         <div className="dashboard-qr__header">
-          <h3>Today QR</h3>
+          <h3>{text.qrTitle}</h3>
           {session ? (
             <button
               type="button"
               className="d2-button d2-button--secondary d2-button--sm"
               onClick={() => setShowQr((prev) => !prev)}
             >
-              {showQr ? 'Hide QR' : 'Show QR'}
+              {showQr ? text.hideQr : text.showQr}
             </button>
           ) : null}
         </div>
         {session ? (
           <>
-            <p>Viewer page link for mobile access.</p>
+            <p>{text.viewerLink}</p>
             <p>
-              <strong>Share URL:</strong> {qrLink}
+              <strong>{text.shareUrl}:</strong> {qrLink}
             </p>
             <button type="button" className="d2-button d2-button--primary" onClick={() => onCopy('today-link', qrLink)}>
-              Copy Today Link
+              {text.copyTodayLink}
             </button>
             {settingsError ? <p>{settingsError}</p> : null}
             {showQr && qrDataUrl ? <img src={qrDataUrl} alt="Today page QR code" className="dashboard-qr__image" /> : null}
           </>
         ) : (
-          <p>로그인한 사용자만 공유 링크/QR을 사용할 수 있습니다.</p>
+          <p>{text.qrLoginOnly}</p>
         )}
       </section>
 
       <div className="dashboard-layout">
         <section className="d2-panel dashboard-list" aria-label="Recent Items List">
-          <h3>Recent Items</h3>
+          <h3>{text.recentItems}</h3>
           <div className="dashboard-list__actions">
             <button
               type="button"
@@ -445,8 +537,8 @@ export function DashboardPage() {
               disabled={filteredItems.length === 0}
             >
               {filteredItems.length > 0 && filteredItems.every((item) => selectedIds.has(item.id))
-                ? 'Unselect All'
-                : 'Select All'}
+                ? text.unselectAll
+                : text.selectAll}
             </button>
             <button
               type="button"
@@ -454,7 +546,7 @@ export function DashboardPage() {
               onClick={onDeleteChecked}
               disabled={selectedIds.size === 0 || deleting}
             >
-              Delete Checked ({selectedIds.size})
+              {text.deleteChecked} ({selectedIds.size})
             </button>
           </div>
           {filteredItems.map((item) => {
@@ -495,7 +587,7 @@ export function DashboardPage() {
                 <div className="dashboard-row__content">
                   <strong className="item-theme-name">{item.displayName}</strong>
                   <span>{item.quality}</span>
-                  <span>Qty: {item.quantity ?? 1}</span>
+                   <span>{text.qty}: {item.quantity ?? 1}</span>
                   <div className="item-theme-badges">
                     {item.isCorrupted ? <span className="item-theme-badge corrupted-badge">Corrupted</span> : null}
                     {visualState.isEthereal ? <span className="item-theme-badge ethereal-badge">Ethereal</span> : null}
@@ -507,7 +599,7 @@ export function DashboardPage() {
               </button>
             )
           })}
-          {filteredItems.length === 0 ? <p>No matching items.</p> : null}
+          {filteredItems.length === 0 ? <p>{text.noMatch}</p> : null}
         </section>
 
         <section
@@ -515,8 +607,8 @@ export function DashboardPage() {
           style={selectedTheme?.style}
           aria-label="Item Detail Panel"
         >
-          <h3>Item Detail</h3>
-          {!selectedItem ? <p>Select an item to view details.</p> : null}
+           <h3>{text.itemDetail}</h3>
+           {!selectedItem ? <p>{text.selectPrompt}</p> : null}
           {selectedItem ? (
             <>
               {selectedItem.thumbnail ? (
@@ -526,12 +618,12 @@ export function DashboardPage() {
                   alt={selectedItem.displayName}
                 />
               ) : null}
-              <p>
-                Name:{' '}
-                <strong className="item-theme-name">
-                  {selectedItem.name ?? selectedItem.displayName}
-                </strong>
-              </p>
+               <p>
+                 {text.name}:{' '}
+                 <strong className="item-theme-name">
+                   {selectedItem.name ?? selectedItem.displayName}
+                 </strong>
+               </p>
               {selectedTheme ? (
                 <div className="item-theme-badges">
                   <span className="item-theme-badge">{selectedTheme.rule.label}</span>
@@ -542,13 +634,13 @@ export function DashboardPage() {
                   ) : null}
                 </div>
               ) : null}
-              <p>Type: {selectedItem.type}</p>
-              <p>Item Level: {selectedItem.iLevel}</p>
-              <p>Defense: {selectedItem.defense ?? '-'}</p>
-              <p>Location: {selectedItem.location}</p>
-              <div className="d2-panel">
-                <h4>Stats</h4>
-                {selectedItem.stats.length === 0 ? <p>No stats</p> : null}
+               <p>{text.type}: {selectedItem.type}</p>
+               <p>{text.itemLevel}: {selectedItem.iLevel}</p>
+               <p>{text.defense}: {selectedItem.defense ?? '-'}</p>
+               <p>{text.location}: {selectedItem.location}</p>
+               <div className="d2-panel">
+                 <h4>{text.stats}</h4>
+                 {selectedItem.stats.length === 0 ? <p>{text.noStats}</p> : null}
                 {selectedItem.stats.map((stat, idx) => (
                   <p key={`${stat.statName}-${idx}`} className={`item-theme-stat${stat.isCorrupted ? ' is-corrupted' : ''}`}>
                     {stat.statValue === null ? (
@@ -578,23 +670,23 @@ export function DashboardPage() {
                   className="d2-button d2-button--primary d2-button--sm"
                   onClick={() => onCopy('discord', buildDiscordText(selectedItem))}
                 >
-                  Copy Discord
+                   {text.copyDiscord}
                 </button>
                 <button
                   type="button"
                   className="d2-button d2-button--secondary d2-button--sm"
                   onClick={() => onCopy('reddit', buildRedditText(selectedItem))}
                 >
-                  Copy Reddit
+                   {text.copyReddit}
                 </button>
                 <button
                   type="button"
                   className="d2-button d2-button--secondary d2-button--sm"
                   onClick={() => onCopy('compact', buildCompactText(selectedItem))}
                 >
-                  Copy Compact
+                   {text.copyCompact}
                 </button>
-                {copiedLabel ? <p>Copied {copiedLabel} format.</p> : null}
+                 {copiedLabel ? <p>{text.copiedFormat}: {copiedLabel}</p> : null}
                 <div>
                   <button
                     type="button"
@@ -602,7 +694,7 @@ export function DashboardPage() {
                     onClick={onDeleteSelected}
                     disabled={deleting}
                   >
-                    Delete Selected
+                     {text.deleteSelected}
                   </button>
                   <button
                     type="button"
@@ -610,14 +702,14 @@ export function DashboardPage() {
                     onClick={onClearAll}
                     disabled={deleting}
                   >
-                    Clear List
+                     {text.clearList}
                   </button>
                 </div>
                 {actionMessage ? <p>{actionMessage}</p> : null}
                 {actionError ? <p>{actionError}</p> : null}
               </div>
 
-              <Link to={`/item/${selectedItem.id}`}>Open full detail page</Link>
+               <Link to={`/item/${selectedItem.id}`}>{text.openFull}</Link>
             </>
           ) : null}
         </section>

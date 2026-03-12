@@ -28,7 +28,6 @@
 
 | 설정 | 설명 |\
 |-----|------|\
-| theme | dark / light |\
 | font_scale | UI 글자 크기 |
 
 ---
@@ -114,7 +113,6 @@ SQLite settings table
 {
   "overlay_item_limit": 10,
   "overlay_opacity": 0.8,
-  "theme": "dark",
   "qr_public_enabled": true
 }
 ```

@@ -7,9 +7,13 @@ import { AuthContext, type AuthContextValue } from './auth-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthContextValue['session']>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(Boolean(supabase))
 
   useEffect(() => {
+    if (!supabase) {
+      return
+    }
+
     let mounted = true
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) {
@@ -58,6 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: session?.user ?? null,
       loading,
       signOut: async () => {
+        if (!supabase) {
+          return
+        }
         await supabase.auth.signOut()
       },
     }

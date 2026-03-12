@@ -2,9 +2,41 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth-context'
 import { markLocalSyncPending } from '../lib/local-store'
-import { supabase } from '../lib/supabase'
+import { supabase, supabaseConfigured } from '../lib/supabase'
+import { useUiLanguage } from '../lib/ui-language-context'
 
 export function LoginPage() {
+  const { language } = useUiLanguage()
+  const text =
+    language === 'ko'
+      ? {
+          title: '로그인',
+          subtitle: '대시보드 사용을 위해 Supabase 계정으로 로그인하세요.',
+          missingEnv: 'Supabase 환경변수가 없어 로그인 기능이 비활성화됩니다. 게스트 모드는 사용 가능합니다.',
+          email: '이메일',
+          password: '비밀번호',
+          signIn: '로그인',
+          signingIn: '로그인 중...',
+          create: '계정 생성',
+          google: 'Google로 계속',
+          signInSuccess: '로그인되었습니다.',
+          signupSuccess: '이메일 인증 후 로그인하세요. 로컬 데이터는 로그인 후 동기화됩니다.',
+          missingSupabase: 'Supabase auth가 설정되지 않았습니다. VITE_SUPABASE_URL과 VITE_SUPABASE_ANON_KEY를 확인하세요.',
+        }
+      : {
+          title: 'Sign in',
+          subtitle: 'Use your Supabase account to access the dashboard.',
+          missingEnv: 'Supabase env is missing. Guest mode still works, but login is disabled.',
+          email: 'Email',
+          password: 'Password',
+          signIn: 'Sign in',
+          signingIn: 'Signing in...',
+          create: 'Create account',
+          google: 'Continue with Google',
+          signInSuccess: 'Signed in successfully.',
+          signupSuccess: 'Check your email to confirm your account. Local data will sync after sign-in.',
+          missingSupabase: 'Supabase auth is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+        }
   const navigate = useNavigate()
   const { session } = useAuth()
   const [email, setEmail] = useState('')
@@ -24,6 +56,10 @@ export function LoginPage() {
     if (loading) {
       return
     }
+    if (!supabase) {
+      setError(text.missingSupabase)
+      return
+    }
     setLoading(true)
     setError(null)
     setMessage(null)
@@ -36,13 +72,17 @@ export function LoginPage() {
     if (authError) {
       setError(authError.message)
     } else {
-      setMessage('Signed in successfully.')
+      setMessage(text.signInSuccess)
     }
     setLoading(false)
   }
 
   const onSignUp = async () => {
     if (loading) {
+      return
+    }
+    if (!supabase) {
+      setError(text.missingSupabase)
       return
     }
     setLoading(true)
@@ -58,13 +98,17 @@ export function LoginPage() {
       setError(authError.message)
     } else {
       markLocalSyncPending()
-      setMessage('Check your email to confirm your account. Local data will sync after sign-in.')
+      setMessage(text.signupSuccess)
     }
     setLoading(false)
   }
 
   const onGoogleSignIn = async () => {
     if (loading) {
+      return
+    }
+    if (!supabase) {
+      setError(text.missingSupabase)
       return
     }
     setLoading(true)
@@ -87,11 +131,14 @@ export function LoginPage() {
   return (
     <section className="login-page">
       <div className="d2-panel login-card">
-        <h2>Sign in</h2>
-        <p>Use your Supabase account to access the dashboard.</p>
+        <h2>{text.title}</h2>
+        <p>{text.subtitle}</p>
+        {!supabaseConfigured ? (
+          <p className="login-error">{text.missingEnv}</p>
+        ) : null}
         <form onSubmit={onSignIn} className="login-form">
           <label className="login-field">
-            <span>Email</span>
+            <span>{text.email}</span>
             <input
               type="email"
               value={email}
@@ -101,7 +148,7 @@ export function LoginPage() {
             />
           </label>
           <label className="login-field">
-            <span>Password</span>
+            <span>{text.password}</span>
             <input
               type="password"
               value={password}
@@ -111,14 +158,19 @@ export function LoginPage() {
             />
           </label>
           <div className="login-actions">
-            <button type="submit" className="button-primary" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign in'}
+            <button type="submit" className="button-primary" disabled={loading || !supabaseConfigured}>
+              {loading ? text.signingIn : text.signIn}
             </button>
-            <button type="button" className="button-secondary" onClick={onSignUp} disabled={loading}>
-              Create account
+            <button type="button" className="button-secondary" onClick={onSignUp} disabled={loading || !supabaseConfigured}>
+              {text.create}
             </button>
-            <button type="button" className="button-secondary" onClick={onGoogleSignIn} disabled={loading}>
-              Continue with Google
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={onGoogleSignIn}
+              disabled={loading || !supabaseConfigured}
+            >
+              {text.google}
             </button>
           </div>
           {message ? <p className="login-message">{message}</p> : null}

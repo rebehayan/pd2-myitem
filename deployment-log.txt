@@ -1,0 +1,85 @@
+PD2 MYITEM 배포 로그
+기록 시각: 2026-03-12 09:17:25 +09:00 (Asia/Seoul)
+
+[요청 의도]
+- 사용자 요청: "현재 작업한걸 배포해줘"
+- 수행 내용: 현재 워크스페이스 기준으로 빌드/검증 후 배포 가능한 산출물 생성
+
+[실행 명령]
+1) npm --prefix app run lint
+2) npm --prefix app run build
+3) npm --prefix app run tauri:build
+
+[실행 결과]
+- 린트: PASS
+- 타입체크 + 웹 빌드: PASS
+- Tauri 데스크톱 빌드: PASS
+
+[생성 산출물]
+- 웹 정적 빌드 결과물:
+  - app/dist
+- 데스크톱 실행 파일:
+  - app/src-tauri/target/release/pd2_broadcast_item_tracker.exe
+- 데스크톱 설치 패키지:
+  - app/src-tauri/target/release/bundle/msi/PD2 Broadcast Item Tracker_0.1.0_x64_en-US.msi
+  - app/src-tauri/target/release/bundle/nsis/PD2 Broadcast Item Tracker_0.1.0_x64-setup.exe
+
+[주요 빌드 경고]
+- Vite 빌드 시 `./assets/fonts/*` 폰트 자산이 빌드 시점에 해석되지 않아 런타임 해석 대상으로 유지됨
+- JS 번들 크기 경고: `dist/assets/index-1m8bOtOW.js` 파일이 minify 이후 500 kB 초과
+
+[배포 메모]
+- 자동 배포용 CI/CD 워크플로 파일은 현재 저장소에 없음
+- 현재 상태는 산출물 생성 완료 단계이며, 외부 업로드/배포 채널 반영은 수동 절차가 남아 있음
+
+[최종 상태]
+- 빌드 및 패키징 성공적으로 완료
+- 업로드 대상(배포 채널)만 정해지면 즉시 배포 가능
+
+--------------------------------------------------
+추가 배포 실행 로그
+기록 시각: 2026-03-12 09:40:34 +09:00 (Asia/Seoul)
+
+[요청사항]
+- 아직 배포가 안 되었으니 실제 배포 진행
+- 요구사항/결과를 로그 텍스트에 기록
+
+[배포 대상 확인]
+- `app/.vercel/project.json` 기준 Vercel 프로젝트 연결 확인
+  - projectId: `prj_UJtLa0bdA2sa88WLt95IDLzlllpe`
+  - orgId: `team_ICtrMdbJH3iXgxXdPSkGP9vZ`
+
+[사전 검증]
+1) `npm --prefix app run lint` -> PASS
+2) `npm --prefix app run build` -> PASS
+   - 타입체크 성공
+   - Vite 빌드 성공
+
+[배포 시도 및 조치]
+1차 시도:
+- 명령: `npx vercel --prod --yes` (workdir: `app`)
+- 결과: 경로 오류 (`...\app\app` 경로 미존재)
+
+2차 시도:
+- 명령: `npx vercel --prod --yes --cwd app` (repo root)
+- 결과: 동일 경로 오류
+
+3차 시도:
+- 명령: `set VERCEL_ORG_ID=... && set VERCEL_PROJECT_ID=... && npx vercel --prod --yes`
+- 결과: 업로드 중 파일 크기 제한(100MB) 초과로 실패
+
+4차 시도(성공 조치 포함):
+- 조치: 루트 `.vercelignore` 추가 (대용량/불필요 파일 제외)
+- 재실행 명령: `set VERCEL_ORG_ID=... && set VERCEL_PROJECT_ID=... && npx vercel --prod --yes`
+- 결과: 배포 성공
+
+[배포 결과]
+- Production URL: `https://app-kw8fdwiqw-rebehayans-projects.vercel.app`
+- Alias URL: `https://app-sigma-ten-20.vercel.app`
+- 확인 결과:
+  - Production URL 응답: 401
+  - Alias URL 응답: 정상 텍스트(`PD2 Broadcast Item Tracker`) 확인
+
+[후속 메모]
+- 현재 실제 배포는 완료됨
+- 다만 기본 Production URL의 401 정책(보호 설정)은 Vercel 프로젝트 설정(접근 보호/인증)에서 추가 확인 필요

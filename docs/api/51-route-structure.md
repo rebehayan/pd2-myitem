@@ -99,7 +99,6 @@ docs/ui/22-today-page-ui.md
 - overlay 표시 개수\
 - overlay 위치\
 - overlay 투명도\
-- theme\
 - QR 공개 설정\
 - QR 토큰
 

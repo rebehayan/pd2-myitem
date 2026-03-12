@@ -2,11 +2,55 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { fetchItemDetail } from '../lib/api'
 import { getItemVisualState } from '../lib/item-visual-state'
+import { useUiLanguage } from '../lib/ui-language-context'
 import type { ItemDetail } from '../lib/types'
 import { getStatToneClass } from '../lib/item-stat-tone'
 import { resolveItemTheme } from '../theme/resolveItemTheme'
 
 export function ItemDetailPage() {
+  const { language } = useUiLanguage()
+  const text =
+    language === 'ko'
+      ? {
+          title: 'Item Detail',
+          invalid: 'Invalid item id',
+          back: 'Back to dashboard',
+          loading: 'Loading...',
+          copied: 'Copied',
+          copyShare: 'Copy Share Text',
+          name: 'Name',
+          type: 'Type',
+          quality: 'Quality',
+          itemLevel: 'Item Level',
+          defense: 'Defense',
+          location: 'Location',
+          captured: 'Captured',
+          stats: 'Stats',
+          noStats: 'No stats',
+          corrupted: 'Corrupted',
+          ethereal: 'Ethereal',
+          socketed: 'Socketed',
+        }
+      : {
+          title: 'Item Detail',
+          invalid: 'Invalid item id',
+          back: 'Back to dashboard',
+          loading: 'Loading...',
+          copied: 'Copied',
+          copyShare: 'Copy Share Text',
+          name: 'Name',
+          type: 'Type',
+          quality: 'Quality',
+          itemLevel: 'Item Level',
+          defense: 'Defense',
+          location: 'Location',
+          captured: 'Captured',
+          stats: 'Stats',
+          noStats: 'No stats',
+          corrupted: 'Corrupted',
+          ethereal: 'Ethereal',
+          socketed: 'Socketed',
+        }
   const { id } = useParams<{ id: string }>()
   const [item, setItem] = useState<ItemDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -29,9 +73,9 @@ export function ItemDetailPage() {
   if (invalidId) {
     return (
       <section className="d2-panel d2-ui">
-        <h2>Item Detail</h2>
-        <p>Invalid item id</p>
-        <Link to="/">Back to dashboard</Link>
+        <h2>{text.title}</h2>
+        <p>{text.invalid}</p>
+        <Link to="/">{text.back}</Link>
       </section>
     )
   }
@@ -39,9 +83,9 @@ export function ItemDetailPage() {
   if (error) {
     return (
       <section className="d2-panel d2-ui">
-        <h2>Item Detail</h2>
+        <h2>{text.title}</h2>
         <p>{error}</p>
-        <Link to="/">Back to dashboard</Link>
+        <Link to="/">{text.back}</Link>
       </section>
     )
   }
@@ -49,8 +93,8 @@ export function ItemDetailPage() {
   if (!item) {
     return (
       <section className="d2-panel d2-ui">
-        <h2>Item Detail</h2>
-        <p>Loading...</p>
+        <h2>{text.title}</h2>
+        <p>{text.loading}</p>
       </section>
     )
   }
@@ -84,13 +128,13 @@ export function ItemDetailPage() {
       <h2 className="item-theme-name">{item.displayName}</h2>
       <div className="item-theme-badges">
         <span className="item-theme-badge">{theme.rule.label}</span>
-        {item.isCorrupted ? <span className="item-theme-badge corrupted-badge">Corrupted</span> : null}
-        {visualState.isEthereal ? <span className="item-theme-badge ethereal-badge">Ethereal</span> : null}
+        {item.isCorrupted ? <span className="item-theme-badge corrupted-badge">{text.corrupted}</span> : null}
+        {visualState.isEthereal ? <span className="item-theme-badge ethereal-badge">{text.ethereal}</span> : null}
         {visualState.socketCount !== null ? (
-          <span className="item-theme-badge socket-badge">Socketed ({visualState.socketCount})</span>
+          <span className="item-theme-badge socket-badge">{text.socketed} ({visualState.socketCount})</span>
         ) : null}
       </div>
-      <p>Name: {item.name ?? '-'}</p>
+      <p>{text.name}: {item.name ?? '-'}</p>
       {item.thumbnail ? (
         <img
           className={`item-thumbnail${visualState.isEthereal ? ' is-ethereal' : ''}`}
@@ -98,20 +142,20 @@ export function ItemDetailPage() {
           alt={item.displayName}
         />
       ) : null}
-      <p>Type: {item.type}</p>
-      <p>Quality: {item.quality}</p>
-      <p>Item Level: {item.iLevel}</p>
-      <p>Defense: {item.defense ?? '-'}</p>
-      <p>Location: {item.location}</p>
-      <p>Captured: {new Date(item.capturedAt).toLocaleString()}</p>
+      <p>{text.type}: {item.type}</p>
+      <p>{text.quality}: {item.quality}</p>
+      <p>{text.itemLevel}: {item.iLevel}</p>
+      <p>{text.defense}: {item.defense ?? '-'}</p>
+      <p>{text.location}: {item.location}</p>
+      <p>{text.captured}: {new Date(item.capturedAt).toLocaleString()}</p>
 
       <button type="button" className="d2-button d2-button--primary" onClick={onCopyShare}>
-        {copied ? 'Copied' : 'Copy Share Text'}
+        {copied ? text.copied : text.copyShare}
       </button>
 
       <div className="d2-panel">
-        <h3>Stats</h3>
-        {item.stats.length === 0 ? <p>No stats</p> : null}
+        <h3>{text.stats}</h3>
+        {item.stats.length === 0 ? <p>{text.noStats}</p> : null}
         {item.stats.map((stat, index) => (
           <p key={`${stat.statName}-${index}`} className={`item-theme-stat${stat.isCorrupted ? ' is-corrupted' : ''}`}>
             {stat.statValue === null ? (
@@ -135,7 +179,7 @@ export function ItemDetailPage() {
         ))}
       </div>
 
-      <Link to="/">Back to dashboard</Link>
+      <Link to="/">{text.back}</Link>
     </section>
   )
 }

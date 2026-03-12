@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { ApiError, deleteItem, fetchCalendarMonth, fetchItemsByDate, fetchTodayPublicData } from '../lib/api'
 import { getItemVisualState } from '../lib/item-visual-state'
+import { useUiLanguage } from '../lib/ui-language-context'
 import type { ItemSummary } from '../lib/types'
 import type { TodayPublicItem, TodayStats } from '../lib/types'
 import { useItemCaptureRefresh } from '../lib/use-item-capture-refresh'
@@ -94,6 +95,64 @@ function getStatsFromItems(source: TodayCardItem[]): TodayStats {
 }
 
 export function TodayPage() {
+  const { language } = useUiLanguage()
+  const timeLocale = language === 'ko' ? 'ko-KR' : 'en-US'
+  const text =
+    language === 'ko'
+      ? {
+          title: 'Today Loot',
+          prev: 'Prev',
+          next: 'Next',
+          today: 'Today',
+          statsUnavailable: 'Stats unavailable.',
+          items: 'Items',
+          unique: 'Unique',
+          runes: 'Runes',
+          quality: 'Quality',
+          category: 'Category',
+          all: 'All',
+          selectAll: 'Select All',
+          unselectAll: 'Unselect All',
+          deleteChecked: 'Delete Checked',
+          select: 'Select',
+          corrupted: 'Corrupted',
+          ethereal: 'Ethereal',
+          socketed: 'Socketed',
+          qty: 'Qty',
+          empty: 'No items captured today.',
+          loadCalendarFail: 'Failed to load calendar.',
+          loadTodayFail: 'Failed to load today items',
+          deleteFail: 'Failed to delete selected items.',
+          confirmDelete: 'Delete selected item(s)?',
+          deleted: 'item(s) deleted.',
+        }
+      : {
+          title: 'Today Loot',
+          prev: 'Prev',
+          next: 'Next',
+          today: 'Today',
+          statsUnavailable: 'Stats unavailable.',
+          items: 'Items',
+          unique: 'Unique',
+          runes: 'Runes',
+          quality: 'Quality',
+          category: 'Category',
+          all: 'All',
+          selectAll: 'Select All',
+          unselectAll: 'Unselect All',
+          deleteChecked: 'Delete Checked',
+          select: 'Select',
+          corrupted: 'Corrupted',
+          ethereal: 'Ethereal',
+          socketed: 'Socketed',
+          qty: 'Qty',
+          empty: 'No items captured today.',
+          loadCalendarFail: 'Failed to load calendar.',
+          loadTodayFail: 'Failed to load today items',
+          deleteFail: 'Failed to delete selected items.',
+          confirmDelete: 'Delete selected item(s)?',
+          deleted: 'item(s) deleted.',
+        }
   const location = useLocation()
   const [items, setItems] = useState<TodayCardItem[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -139,10 +198,10 @@ export function TodayPage() {
       if (!mountedRef.current) {
         return
       }
-      setCalendarError(err instanceof Error ? err.message : 'Failed to load calendar.')
+      setCalendarError(err instanceof Error ? err.message : text.loadCalendarFail)
       setCalendarCounts({})
     }
-  }, [calendarMonth, key])
+  }, [calendarMonth, key, text.loadCalendarFail])
 
   const loadItems = useCallback(async () => {
     if (loadingRef.current || !mountedRef.current) {
@@ -196,7 +255,7 @@ export function TodayPage() {
       if (!mountedRef.current) {
         return
       }
-      const message = err instanceof Error ? err.message : 'Failed to load today items'
+      const message = err instanceof Error ? err.message : text.loadTodayFail
       setError(message)
       setItems([])
       setSelectedIds(new Set())
@@ -204,7 +263,7 @@ export function TodayPage() {
     } finally {
       loadingRef.current = false
     }
-  }, [calendarMonth, key, loadCalendar, selectedDate])
+  }, [calendarMonth, key, loadCalendar, selectedDate, text.loadTodayFail])
 
   useEffect(() => {
     mountedRef.current = true
@@ -289,7 +348,7 @@ export function TodayPage() {
     if (deleting || selectedIds.size === 0) {
       return
     }
-    if (!window.confirm(`Delete ${selectedIds.size} selected item(s)?`)) {
+    if (!window.confirm(`${text.confirmDelete} (${selectedIds.size})`)) {
       return
     }
 
@@ -299,10 +358,10 @@ export function TodayPage() {
       await Promise.all(Array.from(selectedIds).map((id) => deleteItem(id)))
       await loadItems()
       setSelectedIds(new Set())
-      setActionMessage(`Deleted ${selectedIds.size} item(s).`)
+      setActionMessage(`${selectedIds.size} ${text.deleted}`)
       window.setTimeout(() => setActionMessage(null), 1500)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to delete selected items.'
+      const message = err instanceof Error ? err.message : text.deleteFail
       setActionError(message)
     } finally {
       setDeleting(false)
@@ -335,10 +394,26 @@ export function TodayPage() {
   }, [monthDate])
   const days = useMemo(() => Array.from({ length: totalDays }, (_, index) => index + 1), [totalDays])
 
+  const formatCapturedTime = useCallback(
+    (value: string) => {
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) {
+        return value
+      }
+      return date.toLocaleTimeString(timeLocale, {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      })
+    },
+    [timeLocale],
+  )
+
   return (
     <section className={`today-page ${isSharedView ? 'today-page--shared' : 'd2-ui'}`}>
       <header className={isSharedView ? 'today-header today-header--shared' : 'd2-panel today-header'}>
-        <h2>Today Loot</h2>
+        <h2>{text.title}</h2>
         <p>{headerDateText}</p>
       </header>
 
@@ -354,7 +429,7 @@ export function TodayPage() {
                 setSelectedDate(`${next}-01`)
               }}
             >
-              Prev
+               {text.prev}
             </button>
             <div className="today-calendar__title">
               <strong>{monthLabel}</strong>
@@ -366,7 +441,7 @@ export function TodayPage() {
                   setSelectedDate(todayDate)
                 }}
               >
-                Today
+                 {text.today}
               </button>
             </div>
             <button
@@ -378,7 +453,7 @@ export function TodayPage() {
                 setSelectedDate(`${next}-01`)
               }}
             >
-              Next
+               {text.next}
             </button>
           </div>
           <div className="today-calendar__weekdays">
@@ -421,29 +496,29 @@ export function TodayPage() {
         {stats ? (
           <>
             <article className="d2-stat">
-              <p className="d2-stat__label">Items</p>
+              <p className="d2-stat__label">{text.items}</p>
               <p className="d2-stat__value">{stats.totalItems}</p>
             </article>
             <article className="d2-stat">
-              <p className="d2-stat__label">Unique</p>
+              <p className="d2-stat__label">{text.unique}</p>
               <p className="d2-stat__value">{stats.uniqueItems}</p>
             </article>
             <article className="d2-stat">
-              <p className="d2-stat__label">Runes</p>
+              <p className="d2-stat__label">{text.runes}</p>
               <p className="d2-stat__value">{stats.runes}</p>
             </article>
           </>
         ) : (
-          <p>Stats unavailable.</p>
+          <p>{text.statsUnavailable}</p>
         )}
       </section>
 
       {!isSharedView ? (
         <section className="d2-panel today-filters" aria-label="Today filters">
           <label>
-            <span className="d2-label">Quality</span>
+            <span className="d2-label">{text.quality}</span>
             <select className="d2-select" value={qualityFilter} onChange={(event) => setQualityFilter(event.target.value)}>
-              <option value="all">All</option>
+              <option value="all">{text.all}</option>
               {qualityOptions.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -452,9 +527,9 @@ export function TodayPage() {
             </select>
           </label>
           <label>
-            <span className="d2-label">Category</span>
+            <span className="d2-label">{text.category}</span>
             <select className="d2-select" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
-              <option value="all">All</option>
+              <option value="all">{text.all}</option>
               {categoryOptions.map((value) => (
                 <option key={value} value={value}>
                   {value}
@@ -473,8 +548,8 @@ export function TodayPage() {
             onClick={onToggleAll}
           >
             {manageableItems.length > 0 && manageableItems.every((item) => selectedIds.has(item.id as string))
-              ? 'Unselect All'
-              : 'Select All'}
+               ? text.unselectAll
+               : text.selectAll}
           </button>
           <button
             type="button"
@@ -482,7 +557,7 @@ export function TodayPage() {
             onClick={onDeleteChecked}
             disabled={selectedIds.size === 0 || deleting}
           >
-            Delete Checked ({selectedIds.size})
+            {text.deleteChecked} ({selectedIds.size})
           </button>
           {actionMessage ? <p>{actionMessage}</p> : null}
           {actionError ? <p>{actionError}</p> : null}
@@ -518,7 +593,7 @@ export function TodayPage() {
                     checked={selectedIds.has(item.id)}
                     onChange={() => onToggleSelected(item.id as string)}
                   />
-                  <span>Select</span>
+                   <span>{text.select}</span>
                 </label>
               ) : null}
               {item.thumbnail ? (
@@ -533,15 +608,15 @@ export function TodayPage() {
               </h3>
               <div className="item-theme-badges">
                 <span className="item-theme-badge">{theme.rule.label}</span>
-                {item.isCorrupted ? <span className="item-theme-badge corrupted-badge">Corrupted</span> : null}
-                {visualState.isEthereal ? <span className="item-theme-badge ethereal-badge">Ethereal</span> : null}
-                {visualState.socketCount !== null ? (
-                  <span className="item-theme-badge socket-badge">Socketed ({visualState.socketCount})</span>
-                ) : null}
-              </div>
-              <p>Quality: {item.quality}</p>
-              <p>Qty: {item.quantity ?? 1}</p>
-              <p>{new Date(item.capturedAt).toLocaleTimeString()}</p>
+                 {item.isCorrupted ? <span className="item-theme-badge corrupted-badge">{text.corrupted}</span> : null}
+                 {visualState.isEthereal ? <span className="item-theme-badge ethereal-badge">{text.ethereal}</span> : null}
+                 {visualState.socketCount !== null ? (
+                   <span className="item-theme-badge socket-badge">{text.socketed} ({visualState.socketCount})</span>
+                 ) : null}
+               </div>
+               <p>{text.quality}: {item.quality}</p>
+               <p>{text.qty}: {item.quantity ?? 1}</p>
+               <p>{formatCapturedTime(item.capturedAt)}</p>
             </article>
           )
         })}
@@ -549,7 +624,7 @@ export function TodayPage() {
 
       {filteredItems.length === 0 ? (
         <div className={isSharedView ? 'today-empty-shared' : 'd2-panel'}>
-          <p>No items captured today.</p>
+           <p>{text.empty}</p>
         </div>
       ) : null}
     </section>

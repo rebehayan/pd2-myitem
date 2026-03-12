@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiError, fetchOverlayItems, fetchSettings } from '../lib/api'
 import { getItemVisualState } from '../lib/item-visual-state'
+import { useUiLanguage } from '../lib/ui-language-context'
 import type { ItemSummary } from '../lib/types'
 import { useItemCaptureRefresh } from '../lib/use-item-capture-refresh'
 import { resolveItemTheme } from '../theme/resolveItemTheme'
@@ -104,10 +105,37 @@ function readPreviewActive(): boolean {
 }
 
 export function OverlayPage() {
+  const { language } = useUiLanguage()
+  const text =
+    language === 'ko'
+      ? {
+          fallbackTitle: 'Overlay Feed',
+          denied: '오버레이 API 접근 거부 (403). 로컬 앱 URL(localhost/127.0.0.1)에서 열어주세요.',
+          notFound: '오버레이 API 경로 없음 (404). 4310 포트 API 서버 실행 여부를 확인하세요.',
+          requestFail: '오버레이 API 요청 실패',
+          unavailable: '오버레이 API를 사용할 수 없습니다. 로컬 API 서버 실행 여부를 확인하세요.',
+          preview: 'Overlay Preview',
+          empty: 'No captured items yet.',
+          corrupted: 'Corrupted',
+          ethereal: 'Ethereal',
+          socketed: 'Socketed',
+        }
+      : {
+          fallbackTitle: 'Overlay Feed',
+          denied: 'Overlay API denied (403). Open overlay from local app URL (localhost/127.0.0.1).',
+          notFound: 'Overlay API route not found (404). Make sure the API server is running on port 4310.',
+          requestFail: 'Overlay API request failed',
+          unavailable: 'Overlay API is unavailable. Check if the local API server is running.',
+          preview: 'Overlay Preview',
+          empty: 'No captured items yet.',
+          corrupted: 'Corrupted',
+          ethereal: 'Ethereal',
+          socketed: 'Socketed',
+        }
   const [items, setItems] = useState<ItemSummary[]>([])
   const [newIds, setNewIds] = useState<Set<string>>(new Set())
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [title, setTitle] = useState('Overlay Feed')
+  const [title, setTitle] = useState(text.fallbackTitle)
   const [titleEnabled, setTitleEnabled] = useState(true)
   const [titleSize, setTitleSize] = useState(18)
   const [titleColor, setTitleColor] = useState('#f7e6a8')
@@ -263,20 +291,20 @@ export function OverlayPage() {
       }
       if (error instanceof ApiError) {
         if (error.status === 403) {
-          setLoadError('Overlay API denied (403). Open overlay from local app URL (localhost/127.0.0.1).')
+          setLoadError(text.denied)
         } else if (error.status === 404) {
-          setLoadError('Overlay API route not found (404). Make sure the API server is running on port 4310.')
+          setLoadError(text.notFound)
         } else {
-          setLoadError(`Overlay API request failed (${error.status}).`)
+          setLoadError(`${text.requestFail} (${error.status}).`)
         }
       } else {
-        setLoadError('Overlay API is unavailable. Check if the local API server is running.')
+        setLoadError(text.unavailable)
       }
       setItems([])
     } finally {
       loadingRef.current = false
     }
-  }, [])
+  }, [text.denied, text.notFound, text.requestFail, text.unavailable])
 
   useEffect(() => {
     mountedRef.current = true
@@ -314,7 +342,7 @@ export function OverlayPage() {
               padding: `${titlePadding}px`,
             }}
           >
-            {title || 'Overlay Feed'}
+            {title || text.fallbackTitle}
           </p>
         </div>
       ) : null}
@@ -357,10 +385,10 @@ export function OverlayPage() {
                       <span className={`overlay-badge quality ${qualityClass(item.quality)}`}>{item.quality}</span>
                     ) : null}
                     {item.quantity !== null ? <span className="overlay-badge quantity">x{item.quantity}</span> : null}
-                    {item.isCorrupted && !hasCorruptedLabel ? <span className="overlay-badge corrupted">Corrupted</span> : null}
-                    {visualState.isEthereal ? <span className="overlay-badge item-theme-badge ethereal-badge">Ethereal</span> : null}
+                    {item.isCorrupted && !hasCorruptedLabel ? <span className="overlay-badge corrupted">{text.corrupted}</span> : null}
+                    {visualState.isEthereal ? <span className="overlay-badge item-theme-badge ethereal-badge">{text.ethereal}</span> : null}
                     {visualState.socketCount !== null ? (
-                      <span className="overlay-badge item-theme-badge socket-badge">Socketed ({visualState.socketCount})</span>
+                      <span className="overlay-badge item-theme-badge socket-badge">{text.socketed} ({visualState.socketCount})</span>
                     ) : null}
                   </div>
                 )}
@@ -371,8 +399,8 @@ export function OverlayPage() {
 
         {empty ? (
           <div className="overlay-empty-panel">
-            <p className="overlay-empty-title">Overlay Preview</p>
-            <p className="overlay-empty">No captured items yet.</p>
+            <p className="overlay-empty-title">{text.preview}</p>
+            <p className="overlay-empty">{text.empty}</p>
             {loadError ? <p className="overlay-empty-error">{loadError}</p> : null}
           </div>
         ) : null}

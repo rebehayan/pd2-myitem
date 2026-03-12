@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { fetchSettings, updateSettings } from '../lib/api'
 import type { AppSettings } from '../lib/types'
 import { defaultAppSettings } from '../lib/settings-defaults'
+import { useUiLanguage } from '../lib/ui-language-context'
 
 function withDefaults(value: Partial<AppSettings>): AppSettings {
   return {
@@ -65,6 +66,53 @@ function readPreviewDraft(): Partial<AppSettings> {
 }
 
 export function SettingsPage() {
+  const { language } = useUiLanguage()
+  const text =
+    language === 'ko'
+      ? {
+          title: '설정',
+          subtitle: '오버레이 및 공개 설정을 관리합니다.',
+          overlayTab: '오버레이',
+          publicTab: '공개',
+          loadFail: '설정을 불러오지 못해 기본값을 사용합니다.',
+          saveOk: '설정을 저장했습니다.',
+          saveFail: '설정 저장에 실패했습니다.',
+          itemCount: '오버레이 아이템 수',
+          opacity: '오버레이 투명도',
+          minimal: '미니멀 오버레이 사용 (썸네일/배지 숨김)',
+          overlayTitle: '오버레이 제목',
+          showTitle: '오버레이 제목 표시',
+          titleSize: '제목 크기',
+          titleColor: '제목 색상',
+          titleBg: '제목 배경',
+          titlePadding: '제목 패딩',
+          qrEnable: 'QR 공개 페이지 사용',
+          qrToken: 'QR 토큰',
+          regen: '토큰 재생성',
+          save: '설정 저장',
+        }
+      : {
+          title: 'Settings',
+          subtitle: 'Manage overlay and public sharing settings.',
+          overlayTab: 'Overlay',
+          publicTab: 'Public',
+          loadFail: 'Failed to load settings; using defaults.',
+          saveOk: 'Settings saved.',
+          saveFail: 'Failed to save settings.',
+          itemCount: 'Overlay Item Count',
+          opacity: 'Overlay Opacity',
+          minimal: 'Use minimal overlay (no thumbnail, no badges)',
+          overlayTitle: 'Overlay Title',
+          showTitle: 'Show overlay title',
+          titleSize: 'Title Size',
+          titleColor: 'Title Color',
+          titleBg: 'Title Background',
+          titlePadding: 'Title Padding',
+          qrEnable: 'Enable QR public page',
+          qrToken: 'QR Token',
+          regen: 'Regenerate Token',
+          save: 'Save settings',
+        }
   const [settings, setSettings] = useState<AppSettings>(defaultAppSettings)
   const [message, setMessage] = useState<string>('')
   const [hasHydrated, setHasHydrated] = useState(false)
@@ -83,10 +131,10 @@ export function SettingsPage() {
       .catch(() => {
         const draft = readPreviewDraft()
         setSettings(withDefaults(draft))
-        setMessage('Failed to load settings; using defaults.')
+        setMessage(text.loadFail)
         setHasHydrated(true)
       })
-  }, [])
+  }, [text.loadFail])
 
   useEffect(() => {
     window.localStorage.setItem('overlay_title_preview_active', 'true')
@@ -146,9 +194,9 @@ export function SettingsPage() {
         String(merged.overlay_title_padding),
       )
       window.localStorage.setItem('overlay_minimal_mode', merged.overlay_minimal_mode ? 'true' : 'false')
-      setMessage('Settings saved.')
+      setMessage(text.saveOk)
     } catch {
-      setMessage('Failed to save settings.')
+      setMessage(text.saveFail)
     }
   }
 
@@ -156,8 +204,8 @@ export function SettingsPage() {
     <section className="d2-panel d2-ui">
       <div className="d2-panel__header">
         <div>
-          <h2 className="d2-panel__title">Settings</h2>
-          <p className="d2-panel__subtitle">Overlay 및 공개 설정을 관리합니다.</p>
+          <h2 className="d2-panel__title">{text.title}</h2>
+          <p className="d2-panel__subtitle">{text.subtitle}</p>
         </div>
         <div className="d2-tabs" role="tablist" aria-label="Settings sections">
           <button
@@ -169,7 +217,7 @@ export function SettingsPage() {
             id="settings-overlay-tab"
             onClick={() => setActiveTab('overlay')}
           >
-            Overlay
+            {text.overlayTab}
           </button>
           <button
             type="button"
@@ -180,7 +228,7 @@ export function SettingsPage() {
             id="settings-sharing-tab"
             onClick={() => setActiveTab('sharing')}
           >
-            Public
+            {text.publicTab}
           </button>
         </div>
       </div>
@@ -192,7 +240,7 @@ export function SettingsPage() {
         hidden={activeTab !== 'overlay'}
       >
         <label className="settings-field">
-          <span className="d2-label">Overlay Item Count</span>
+          <span className="d2-label">{text.itemCount}</span>
           <select
             className="d2-select"
             value={settings.overlay_item_limit}
@@ -210,7 +258,7 @@ export function SettingsPage() {
         </label>
 
         <label className="settings-field">
-          <span className="d2-label">Overlay Opacity</span>
+          <span className="d2-label">{text.opacity}</span>
           <input
             type="number"
             min={0.1}
@@ -238,11 +286,11 @@ export function SettingsPage() {
               }))
             }
           />
-          <span className="d2-label">Use minimal overlay (no thumbnail, no badges)</span>
+          <span className="d2-label">{text.minimal}</span>
         </label>
 
         <label className="settings-field">
-          <span className="d2-label">Overlay Title</span>
+          <span className="d2-label">{text.overlayTitle}</span>
           <input
             type="text"
             className="d2-input"
@@ -267,12 +315,12 @@ export function SettingsPage() {
               }))
             }
           />
-          <span className="d2-label">Show overlay title</span>
+          <span className="d2-label">{text.showTitle}</span>
         </label>
 
         <div className="settings-grid settings-grid--title">
           <label className="settings-field">
-            <span className="d2-label">Title Size ({settings.overlay_title_size}px)</span>
+            <span className="d2-label">{text.titleSize} ({settings.overlay_title_size}px)</span>
             <input
               type="range"
               min={12}
@@ -289,7 +337,7 @@ export function SettingsPage() {
           </label>
 
           <label className="settings-field">
-            <span className="d2-label">Title Color</span>
+            <span className="d2-label">{text.titleColor}</span>
             <input
               type="color"
               className="settings-color"
@@ -304,7 +352,7 @@ export function SettingsPage() {
           </label>
 
           <label className="settings-field">
-            <span className="d2-label">Title Background</span>
+            <span className="d2-label">{text.titleBg}</span>
             <input
               type="color"
               className="settings-color"
@@ -319,7 +367,7 @@ export function SettingsPage() {
           </label>
 
           <label className="settings-field">
-            <span className="d2-label">Title Padding ({settings.overlay_title_padding}px)</span>
+            <span className="d2-label">{text.titlePadding} ({settings.overlay_title_padding}px)</span>
             <input
               type="range"
               min={0}
@@ -354,11 +402,11 @@ export function SettingsPage() {
               }))
             }
           />
-          <span className="d2-label">Enable QR public page</span>
+          <span className="d2-label">{text.qrEnable}</span>
         </label>
 
         <label className="settings-field">
-          <span className="d2-label">QR Token</span>
+          <span className="d2-label">{text.qrToken}</span>
           <input
             type="text"
             className="d2-input"
@@ -382,12 +430,12 @@ export function SettingsPage() {
             }))
           }
         >
-          Regenerate Token
+          {text.regen}
         </button>
       </div>
 
       <button type="button" className="d2-button d2-button--primary" onClick={save}>
-        Save settings
+        {text.save}
       </button>
 
       {message ? <p>{message}</p> : null}

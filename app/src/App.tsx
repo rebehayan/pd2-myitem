@@ -9,10 +9,42 @@ import { OverlayPage } from './pages/OverlayPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import { useAuth } from './lib/auth-context'
+import { useUiLanguage } from './lib/ui-language-context'
 
 function App() {
   const location = useLocation()
   const { session, loading, signOut } = useAuth()
+  const { language, toggleLanguage } = useUiLanguage()
+  const text =
+    language === 'ko'
+      ? {
+          title: 'PD2 방송 아이템 트래커',
+          loading: '세션 불러오는 중...',
+          subtitle: '대시보드, 오버레이, 투데이 페이지를 위한 로컬 우선 아이템 트래킹.',
+          guest: '게스트 모드 (로컬 저장소)',
+          signIn: '로그인',
+          signOut: '로그아웃',
+          signedIn: '로그인됨',
+          dashboard: '대시보드',
+          overlay: '오버레이',
+          today: '투데이',
+          settings: '설정',
+          languageButton: 'English',
+        }
+      : {
+          title: 'PD2 Broadcast Item Tracker',
+          loading: 'Loading session...',
+          subtitle: 'Local-first item tracking for dashboard, overlay, and today page.',
+          guest: 'Guest mode (local storage)',
+          signIn: 'Sign in',
+          signOut: 'Sign out',
+          signedIn: 'Signed in',
+          dashboard: 'Dashboard',
+          overlay: 'Overlay',
+          today: 'Today',
+          settings: 'Settings',
+          languageButton: '한국어',
+        }
   const isOverlayRoute = location.pathname === '/overlay' || location.pathname === '/overlay/'
   const isTodayRoute = location.pathname === '/today' || location.pathname === '/today/'
   const todayParams = new URLSearchParams(location.search)
@@ -22,8 +54,8 @@ function App() {
     return (
       <div className="shell">
         <header className="shell__header">
-          <h1>PD2 Broadcast Item Tracker</h1>
-          <p>Loading session...</p>
+          <h1>{text.title}</h1>
+          <p>{text.loading}</p>
         </header>
         <footer className="shell__footer">© {new Date().getFullYear()} rebehayan</footer>
       </div>
@@ -41,34 +73,40 @@ function App() {
   return (
     <div className="shell">
       <header className="shell__header">
-        <h1>PD2 Broadcast Item Tracker</h1>
-        <p>Local-first item tracking for dashboard, overlay, and today page.</p>
+        <h1>{text.title}</h1>
+        <p>{text.subtitle}</p>
         <div className="shell__auth">
           {session ? (
             <>
-              <span>{session.user.email ?? 'Signed in'}</span>
+              <span>{session.user.email ?? text.signedIn}</span>
               <button type="button" className="button-secondary" onClick={() => void signOut()}>
-                Sign out
+                {text.signOut}
+              </button>
+              <button type="button" className="button-secondary" onClick={toggleLanguage}>
+                {text.languageButton}
               </button>
             </>
           ) : (
             <>
-              <span>Guest mode (local storage)</span>
+              <span>{text.guest}</span>
               <NavLink to="/login" className="button-secondary">
-                Sign in
+                {text.signIn}
               </NavLink>
+              <button type="button" className="button-secondary" onClick={toggleLanguage}>
+                {text.languageButton}
+              </button>
             </>
           )}
         </div>
       </header>
 
       <nav className="shell__nav" aria-label="Main navigation">
-        <NavLink to="/">Dashboard</NavLink>
+        <NavLink to="/">{text.dashboard}</NavLink>
         <a href="/overlay" target="_blank" rel="noreferrer">
-          Overlay
+          {text.overlay}
         </a>
-        <NavLink to="/today">Today</NavLink>
-        <NavLink to="/settings">Settings</NavLink>
+        <NavLink to="/today">{text.today}</NavLink>
+        <NavLink to="/settings">{text.settings}</NavLink>
       </nav>
 
       <main className="shell__main">
