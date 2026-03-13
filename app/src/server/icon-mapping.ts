@@ -21,11 +21,34 @@ const defaultTypeMap: Record<string, string> = {
   worldstone_shard: 'maps/Worldstone_Shard.webp',
   ohm_rune: 'rune/RuneOhm.webp',
   ring: 'rings/Ring_1.webp',
+  반지: 'rings/Ring_1.webp',
   amulet: 'amulets/Amulet_1.webp',
+  necklace: 'amulets/Amulet_1.webp',
+  목걸이: 'amulets/Amulet_1.webp',
   jewel: 'charms_jewels/Jewel_blue.webp',
   small_charm: 'charms_jewels/Grand_Charm_2.webp',
   large_charm: 'charms_jewels/Grand_Charm_2.webp',
   grand_charm: 'charms_jewels/Grand_Charm_2.webp',
+}
+
+const categoryPreferredFolders: Record<string, string[]> = {
+  weapon: ['weapons'],
+  armor: ['non-weapons'],
+  helm: ['non-weapons'],
+  shield: ['non-weapons'],
+  gloves: ['non-weapons'],
+  boots: ['non-weapons'],
+  belt: ['non-weapons'],
+  charm: ['charms_jewels'],
+  gem: ['charms_jewels'],
+  jewel: ['charms_jewels'],
+  map: ['maps'],
+  material: ['maps'],
+  rune: ['rune'],
+  quiver: ['quivers'],
+  consumable: ['generic'],
+  quest: ['generic'],
+  misc: ['generic'],
 }
 
 const defaultCategoryMap: Record<string, string> = {
@@ -444,9 +467,44 @@ function formatRuneFileName(runeKey: string): string {
   return `rune/Rune${runeKey.charAt(0).toUpperCase()}${runeKey.slice(1)}.webp`
 }
 
-function resolveIconByStemCandidates(candidates: string[]): string | null {
+function resolveIconByStemCandidates(candidates: string[], preferredFolders: string[] = []): string | null {
   const index = buildIconPathByStem()
   const tried = new Set<string>()
+
+  const getFolderName = (iconPath: string): string => {
+    const firstSlash = iconPath.indexOf('/')
+    if (firstSlash < 0) {
+      return iconPath.toLowerCase()
+    }
+    return iconPath.slice(0, firstSlash).toLowerCase()
+  }
+
+  const pickByPreferredFolder = (matches: string[], preferredFolders: string[]): string | null => {
+    if (matches.length === 0) {
+      return null
+    }
+    if (preferredFolders.length === 0) {
+      return matches[0] ?? null
+    }
+
+    const normalizedFolders = preferredFolders.map((folder) => folder.toLowerCase())
+    for (const folder of normalizedFolders) {
+      const inFolder = matches.find((match) => getFolderName(match) === folder)
+      if (inFolder) {
+        return inFolder
+      }
+    }
+
+    return matches[0] ?? null
+  }
+
+  const resolveWithPreferredFolders = (key: string, preferredFolders: string[]): string | null => {
+    const matches = index[key]
+    if (!matches || matches.length === 0) {
+      return null
+    }
+    return pickByPreferredFolder(matches, preferredFolders)
+  }
 
   for (const candidate of candidates) {
     const raw = candidate.trim().toLowerCase()
@@ -456,7 +514,7 @@ function resolveIconByStemCandidates(candidates: string[]): string | null {
         continue
       }
       tried.add(key)
-      const match = index[key]?.[0]
+      const match = resolveWithPreferredFolders(key, preferredFolders)
       if (match) {
         return match
       }
@@ -464,6 +522,24 @@ function resolveIconByStemCandidates(candidates: string[]): string | null {
   }
 
   return null
+}
+
+function getPreferredIconFolders(args: { baseType: string; itemName: string | null; category: string }): string[] {
+  if (args.category === 'jewelry') {
+    const normalizedType = normalizeTypeKey(args.baseType)
+    const normalizedName = args.itemName ? normalizeTypeKey(args.itemName) : ''
+    const combined = `${normalizedType}_${normalizedName}`
+
+    if (combined.includes('amulet') || combined.includes('necklace') || combined.includes('목걸이')) {
+      return ['amulets', 'rings']
+    }
+    if (combined.includes('ring') || combined.includes('반지')) {
+      return ['rings', 'amulets']
+    }
+    return ['rings', 'amulets']
+  }
+
+  return categoryPreferredFolders[args.category] ?? []
 }
 
 function getFamilyRepresentativeName(entry: FamilyMapEntry): string | null {
@@ -485,7 +561,7 @@ const categoryKeywordRules: Array<{ category: string; keywords: string[] }> = [
   { category: 'helm', keywords: ['helm', 'crown', 'mask', 'circlet'] },
   { category: 'shield', keywords: ['shield', 'aegis'] },
   { category: 'belt', keywords: ['belt', 'sash'] },
-  { category: 'jewelry', keywords: ['ring', 'amulet'] },
+  { category: 'jewelry', keywords: ['ring', '반지', 'amulet', 'necklace', '목걸이'] },
   { category: 'charm', keywords: ['charm'] },
   { category: 'material', keywords: ['shard', 'essence', 'material', 'orb', 'scarab'] },
   { category: 'rune', keywords: ['rune'] },
@@ -558,6 +634,7 @@ export function resolveThumbnail(args: {
   const normalizedType = normalizeTypeKey(args.baseType)
   const runeKey = resolveRuneKeyFromText(args.baseType) ?? (args.itemName ? resolveRuneKeyFromText(args.itemName) : null)
   const category = runeKey ? 'rune' : inferCategory(args.baseType)
+  const preferredFolders = getPreferredIconFolders({ baseType: args.baseType, itemName: args.itemName, category })
   const qualityFrame = toQualityFrame(args.quality)
   const normalizedUniqueName = args.itemName ? normalizeUniqueNameKey(args.itemName) : ''
 
@@ -595,7 +672,7 @@ export function resolveThumbnail(args: {
     }
   }
 
-  const pd2BaseIcon = resolveIconByStemCandidates([args.baseType])
+  const pd2BaseIcon = resolveIconByStemCandidates([args.baseType], preferredFolders)
   if (pd2BaseIcon) {
     return {
       iconPath: pd2BaseIcon,
@@ -614,7 +691,7 @@ export function resolveThumbnail(args: {
   if (familyEntry) {
     const representative = getFamilyRepresentativeName(familyEntry)
     if (representative) {
-      const familyIcon = resolveIconByStemCandidates([representative])
+      const familyIcon = resolveIconByStemCandidates([representative], preferredFolders)
       if (familyIcon) {
         return {
           iconPath: familyIcon,
