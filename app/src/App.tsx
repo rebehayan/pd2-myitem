@@ -6,7 +6,9 @@ import { D2KitPage } from './pages/D2KitPage'
 import { GuidePage } from './pages/GuidePage'
 import { ItemDetailPage } from './pages/ItemDetailPage'
 import { LoginPage } from './pages/LoginPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 import { OverlayPage } from './pages/OverlayPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import { useAuth } from './lib/auth-context'
@@ -22,7 +24,7 @@ function App() {
           title: 'PD2 방송 아이템 트래커',
           loading: '세션 불러오는 중...',
           subtitle: '대시보드, 오버레이, 투데이 페이지를 위한 로컬 우선 아이템 트래킹.',
-          guest: '게스트 모드 (로컬 저장소)',
+          guest: '게스트 모드 (로그인 없이 바로 사용 가능)',
           signIn: '로그인',
           signOut: '로그아웃',
           signedIn: '로그인됨',
@@ -37,7 +39,7 @@ function App() {
           title: 'PD2 Broadcast Item Tracker',
           loading: 'Loading session...',
           subtitle: 'Local-first item tracking for dashboard, overlay, and today page.',
-          guest: 'Guest mode (local storage)',
+          guest: 'Guest mode (use instantly without signing in)',
           signIn: 'Sign in',
           signOut: 'Sign out',
           signedIn: 'Signed in',
@@ -49,6 +51,7 @@ function App() {
           languageButton: '한국어',
         }
   const isOverlayRoute = location.pathname === '/overlay' || location.pathname === '/overlay/'
+  const isOverlaySubRoute = location.pathname.startsWith('/overlay/')
   const isTodayRoute = location.pathname === '/today' || location.pathname === '/today/'
   const todayParams = new URLSearchParams(location.search)
   const isTodaySharedRoute = isTodayRoute && Boolean(todayParams.get('key') ?? todayParams.get('token'))
@@ -67,6 +70,10 @@ function App() {
 
   if (isOverlayRoute) {
     return <OverlayPage />
+  }
+
+  if (isOverlaySubRoute) {
+    return <NotFoundPage overlayMode />
   }
 
   if (isTodaySharedRoute) {
@@ -126,6 +133,8 @@ function App() {
           <Route path="/item/:id" element={<ItemDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
 

@@ -136,6 +136,51 @@
   margin: 0.2rem 0 0;
 }
 
+.not-found-page {
+  border: 1px solid rgba(116, 92, 41, 0.75);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(9, 10, 14, 0.98), rgba(4, 5, 9, 0.98));
+  padding: 1.2rem;
+  text-align: center;
+}
+
+.not-found-page--overlay {
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.not-found-page__code {
+  margin: 0;
+  font-family: var(--d2-font-display);
+  font-size: 2rem;
+  letter-spacing: 0.08em;
+  color: var(--d2-gold-0);
+}
+
+.not-found-page h2 {
+  margin: 0;
+  font-family: var(--d2-font-display);
+  color: var(--d2-gold-0);
+}
+
+.not-found-page p {
+  margin: 0;
+  color: var(--d2-ash-0);
+}
+
+.not-found-page__actions {
+  margin-top: 0.9rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
 
 .grid {
   display: grid;

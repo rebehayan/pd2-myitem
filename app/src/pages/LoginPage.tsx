@@ -21,6 +21,11 @@ export function LoginPage() {
           google: 'Google로 계속',
           signInSuccess: '로그인되었습니다.',
           signupSuccess: '이메일 인증 후 로그인하세요. 로컬 데이터는 로그인 후 동기화됩니다.',
+          forgotPassword: '비밀번호 찾기',
+          sendingReset: '재설정 메일 전송 중...',
+          resetSent: '입력한 이메일 계정이 존재하면 비밀번호 재설정 메일을 보냈습니다. 메일함을 확인하세요.',
+          resetRequiresEmail: '비밀번호 재설정 메일을 보내려면 이메일을 먼저 입력하세요.',
+          resetRequestFailed: '재설정 메일을 보내지 못했습니다. 잠시 후 다시 시도하세요.',
           missingSupabase: 'Supabase auth가 설정되지 않았습니다. VITE_SUPABASE_URL과 VITE_SUPABASE_ANON_KEY를 확인하세요.',
         }
       : {
@@ -35,6 +40,11 @@ export function LoginPage() {
           google: 'Continue with Google',
           signInSuccess: 'Signed in successfully.',
           signupSuccess: 'Check your email to confirm your account. Local data will sync after sign-in.',
+          forgotPassword: 'Forgot password',
+          sendingReset: 'Sending reset email...',
+          resetSent: 'If an account exists for this email, we sent a password reset link. Please check your inbox.',
+          resetRequiresEmail: 'Enter your email first to receive a password reset email.',
+          resetRequestFailed: 'Could not send reset email. Please try again shortly.',
           missingSupabase: 'Supabase auth is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
         }
   const navigate = useNavigate()
@@ -42,6 +52,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetRequesting, setResetRequesting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -58,6 +69,7 @@ export function LoginPage() {
     }
     if (!supabase) {
       setError(text.missingSupabase)
+      setResetRequesting(false)
       return
     }
     setLoading(true)
@@ -128,6 +140,41 @@ export function LoginPage() {
     }
   }
 
+  const onResetPassword = async () => {
+    if (loading) {
+      return
+    }
+    if (!supabase) {
+      setError(text.missingSupabase)
+      return
+    }
+
+    const targetEmail = email.trim()
+    if (!targetEmail) {
+      setError(text.resetRequiresEmail)
+      setMessage(null)
+      setResetRequesting(false)
+      return
+    }
+
+    setResetRequesting(true)
+    setLoading(true)
+    setError(null)
+    setMessage(null)
+
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+
+    if (resetError) {
+      setError(text.resetRequestFailed)
+    } else {
+      setMessage(text.resetSent)
+    }
+    setResetRequesting(false)
+    setLoading(false)
+  }
+
   return (
     <section className="login-page">
       <div className="d2-panel login-card">
@@ -171,6 +218,14 @@ export function LoginPage() {
               disabled={loading || !supabaseConfigured}
             >
               {text.google}
+            </button>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={onResetPassword}
+              disabled={loading || !supabaseConfigured}
+            >
+              {resetRequesting ? text.sendingReset : text.forgotPassword}
             </button>
           </div>
           {message ? <p className="login-message">{message}</p> : null}

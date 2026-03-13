@@ -32,6 +32,10 @@ export function GuidePage() {
               name: '오버레이/공개 설정 제어',
               desc: '설정 페이지에서 오버레이 표시 수, 투명도, QR 공개 여부, 토큰 등을 변경할 수 있습니다.',
             },
+            {
+              name: '로그인 / 게스트 모드',
+              desc: '계정 로그인으로 동기화 기능을 쓰거나, 로그인 없이 게스트 모드로 바로 시작할 수 있습니다.',
+            },
           ],
           captureSteps: [
             '게임에서 확인할 아이템 위에 마우스를 올려 툴팁을 띄웁니다.',
@@ -96,6 +100,10 @@ export function GuidePage() {
               a: '상단 헤더의 언어 전환 버튼으로 즉시 변경할 수 있습니다.',
             },
             {
+              q: '로그인했을 때와 게스트 모드의 차이는 무엇인가요?',
+              a: '로그인하면 계정 기반 동기화 기능을 사용할 수 있고, 게스트 모드는 로그인 없이 바로 사용할 수 있지만 기기/브라우저를 바꾸면 기존 기록이 자동으로 이어지지 않을 수 있습니다.',
+            },
+            {
               q: '아이템이 가끔 늦게 보이는 것 같아요.',
               a: '대시보드 기준으로 먼저 반영 여부를 확인하고, OBS 오버레이가 지연되면 브라우저 소스 FPS/하드웨어 가속/새로고침 주기를 점검하세요.',
             },
@@ -149,7 +157,7 @@ export function GuidePage() {
             },
             {
               name: 'Sign-in / Guest',
-              desc: 'Run with account sign-in or local-first guest mode.',
+              desc: 'Use account sign-in for sync features, or start immediately in guest mode without signing in.',
             },
           ],
           captureSteps: [
@@ -203,8 +211,20 @@ export function GuidePage() {
               a: 'Use the language button in the top header.',
             },
             {
+              q: 'What is the difference between signed-in mode and guest mode?',
+              a: 'Signed-in mode supports account-based sync features, while guest mode lets you start instantly without signing in but may not carry over previous records when you switch device or browser.',
+            },
+            {
               q: 'Why does overlay look delayed sometimes?',
               a: 'Check data first on Dashboard, then review OBS browser source refresh/FPS/hardware acceleration settings.',
+            },
+            {
+              q: 'How do I input item information?',
+              a: 'Hover over the item in-game and press Ctrl+C. The app extracts the copied data and updates it automatically.',
+            },
+            {
+              q: 'Can I keep the public link open during stream?',
+              a: 'Yes, but session-based sharing is safer. Create/enable the token at stream start, then rotate it after stream to shorten link lifetime.',
             },
           ],
           cautions: [
