@@ -85,23 +85,6 @@ function extractJsonCandidate(text: string): string | null {
     return trimmed
   }
 
-  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-  if (fenceMatch?.[1]) {
-    const fenced = fenceMatch[1].trim()
-    if (isJsonCandidate(fenced)) {
-      return fenced
-    }
-  }
-
-  const firstBrace = trimmed.indexOf('{')
-  const lastBrace = trimmed.lastIndexOf('}')
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    const sliced = trimmed.slice(firstBrace, lastBrace + 1).trim()
-    if (isJsonCandidate(sliced)) {
-      return sliced
-    }
-  }
-
   return null
 }
 
@@ -117,13 +100,18 @@ function unwrapItemCandidate(parsed: unknown): unknown {
   return parsed
 }
 
-function isPd2ItemCandidate(parsed: unknown): parsed is { type: string } {
+function isPd2ItemCandidate(parsed: unknown): parsed is { type: string; quality: string } {
   const candidate = unwrapItemCandidate(parsed)
   if (!candidate || typeof candidate !== 'object') {
     return false
   }
-  const maybeItem = candidate as { type?: unknown }
-  return typeof maybeItem.type === 'string' && maybeItem.type.trim().length > 0
+  const maybeItem = candidate as { type?: unknown; quality?: unknown }
+  return (
+    typeof maybeItem.type === 'string' &&
+    maybeItem.type.trim().length > 0 &&
+    typeof maybeItem.quality === 'string' &&
+    maybeItem.quality.trim().length > 0
+  )
 }
 
 function isStrongPd2ItemCandidate(parsed: unknown): boolean {
@@ -213,7 +201,7 @@ export function startClipboardMonitor(
         return
       }
 
-      if (!hasRequiredGames && !isStrongPd2ItemCandidate(parsed)) {
+      if (!hasRequiredGames) {
         if (isDev && Date.now() - lastProcessGateBlockedLogAt > 5000) {
           console.log('[clipboard] process gate blocked capture (waiting for PD2/Diablo2)')
           lastProcessGateBlockedLogAt = Date.now()
@@ -221,8 +209,12 @@ export function startClipboardMonitor(
         return
       }
 
-      if (!hasRequiredGames && isDev) {
-        console.log('[clipboard] process gate bypassed by strong PD2 item payload')
+      if (!isStrongPd2ItemCandidate(parsed)) {
+        if (isDev) {
+          console.log('[clipboard] weak pd2-like payload ignored')
+        }
+        lastValue = current
+        return
       }
 
         try {

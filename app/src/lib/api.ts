@@ -13,6 +13,7 @@ import {
   writeLocalSettings,
 } from './local-store'
 import { getAccessToken } from './supabase'
+import { resolveLocalThumbnailPath } from './local-thumbnail'
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? ''
 const preferApiWithoutAuth = import.meta.env.VITE_PREFER_API_WITHOUT_AUTH !== 'false'
@@ -48,6 +49,10 @@ async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
 }
 
 async function shouldUseLocal(): Promise<boolean> {
+  if (!API_BASE) {
+    return true
+  }
+
   const token = await getAccessToken()
 
   const now = Date.now()
@@ -58,7 +63,17 @@ async function shouldUseLocal(): Promise<boolean> {
         headers.set('Authorization', `Bearer ${token}`)
       }
       const res = await fetch(`${API_BASE}/api/health`, { cache: 'no-store', headers })
-      apiReachable = res.ok
+      if (!res.ok) {
+        apiReachable = false
+      } else {
+        const contentType = res.headers.get('content-type') ?? ''
+        if (!contentType.toLowerCase().includes('application/json')) {
+          apiReachable = false
+        } else {
+          const payload = (await res.json()) as { ok?: boolean }
+          apiReachable = payload.ok === true
+        }
+      }
     } catch {
       apiReachable = false
     }
@@ -81,6 +96,124 @@ function sortByCapturedAtDesc<T extends { capturedAt: string }>(items: T[]): T[]
   return [...items].sort((left, right) => {
     return new Date(right.capturedAt).getTime() - new Date(left.capturedAt).getTime()
   })
+}
+
+async function mirrorOverlaySettingsToLocalApi(payload: Partial<AppSettings>): Promise<void> {
+  const maxAttempts = 3
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const res = await fetch('http://127.0.0.1:4310/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      })
+      if (res.ok) {
+        return
+      }
+    } catch {
+      void 0
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 350 * (attempt + 1)))
+  }
+}
+
+async function mirrorOverlayItemsClearToLocalApi(): Promise<void> {
+  const maxAttempts = 2
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const res = await fetch('http://127.0.0.1:4310/api/items/clear', {
+        method: 'DELETE',
+        cache: 'no-store',
+      })
+      if (res.ok) {
+        return
+      }
+    } catch {
+      void 0
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)))
+  }
+}
+
+async function mirrorOverlayDeleteItemToLocalApi(id: string): Promise<void> {
+  if (!id) {
+    return
+  }
+  const maxAttempts = 2
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const res = await fetch(`http://127.0.0.1:4310/api/items/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        cache: 'no-store',
+      })
+      if (res.ok || res.status === 404) {
+        return
+      }
+    } catch {
+      void 0
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)))
+  }
+}
+
+function toOverlaySyncItem(item: ItemDetail): {
+  id: string
+  type: string
+  displayName: string
+  quality: string
+  quantity: number | null
+  isCorrupted: boolean
+  thumbnail: string
+  capturedAt: string
+  keyStats: string[]
+  category: string
+  analysisProfile: string
+  analysisTags: string[]
+} {
+  const normalizedThumbnail = resolveLocalThumbnailPath({
+    name: item.name,
+    type: item.type,
+    quality: item.quality,
+    category: item.category ?? 'misc',
+    existingThumbnail: item.thumbnail,
+  })
+
+  return {
+    id: item.id,
+    type: item.type,
+    displayName: item.displayName,
+    quality: item.quality,
+    quantity: item.quantity,
+    isCorrupted: item.isCorrupted,
+    thumbnail: normalizedThumbnail,
+    capturedAt: item.capturedAt,
+    keyStats: item.keyStats && item.keyStats.length > 0 ? item.keyStats : item.stats.slice(0, 3).map(formatKeyStat),
+    category: item.category ?? 'misc',
+    analysisProfile: item.analysisProfile ?? 'unknown',
+    analysisTags: item.analysisTags ?? [],
+  }
+}
+
+async function mirrorOverlayItemsSnapshotToLocalApi(items: ItemDetail[]): Promise<void> {
+  const payload = { items: items.map((item) => toOverlaySyncItem(item)) }
+  const maxAttempts = 2
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const res = await fetch('http://127.0.0.1:4310/api/items/sync', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      })
+      if (res.ok) {
+        return
+      }
+    } catch {
+      void 0
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 250 * (attempt + 1)))
+  }
 }
 
 function formatKeyStat(stat: ItemDetail['stats'][number]): string {
@@ -368,7 +501,16 @@ export async function fetchItemDetail(id: string): Promise<ItemDetail> {
     if (!match) {
       throw new ApiError(404, 'Item not found')
     }
-    return match
+    return {
+      ...match,
+      thumbnail: resolveLocalThumbnailPath({
+        name: match.name,
+        type: match.type,
+        quality: match.quality,
+        category: match.category ?? 'misc',
+        existingThumbnail: match.thumbnail,
+      }),
+    }
   }
   const res = await authFetch(`${API_BASE}/api/items/${id}`)
   return parseJson<ItemDetail>(res)
@@ -382,24 +524,30 @@ export async function deleteItem(id: string): Promise<void> {
       throw new ApiError(404, 'Item not found')
     }
     writeLocalItems(next)
+    await mirrorOverlayDeleteItemToLocalApi(id)
+    await mirrorOverlayItemsSnapshotToLocalApi(next)
     return
   }
   const res = await authFetch(`${API_BASE}/api/items/${id}`, {
     method: 'DELETE',
   })
   await parseJson<{ deleted: boolean }>(res)
+  await mirrorOverlayDeleteItemToLocalApi(id)
 }
 
 export async function clearItems(): Promise<number> {
   if (await shouldUseLocal()) {
     const items = readLocalItems()
     clearLocalItems()
+    await mirrorOverlayItemsClearToLocalApi()
+    await mirrorOverlayItemsSnapshotToLocalApi([])
     return items.length
   }
   const res = await authFetch(`${API_BASE}/api/items`, {
     method: 'DELETE',
   })
   const payload = await parseJson<{ deleted_items: number }>(res)
+  await mirrorOverlayItemsClearToLocalApi()
   return payload.deleted_items
 }
 
@@ -416,6 +564,7 @@ export async function updateSettings(payload: Partial<AppSettings>): Promise<App
     const current = readLocalSettings(defaultAppSettings)
     const next = { ...current, ...payload }
     writeLocalSettings(next)
+    await mirrorOverlaySettingsToLocalApi(next)
     return next
   }
   const res = await authFetch(`${API_BASE}/api/settings`, {
@@ -470,6 +619,17 @@ interface ApiSyncPushResult {
 }
 
 export async function fetchSyncStatus(): Promise<SyncStatus> {
+  if (await shouldUseLocal()) {
+    return {
+      pendingItems: 0,
+      failedItems: 0,
+      queuedOperations: 0,
+      failedOperations: 0,
+      lastError: null,
+      nextRetryAt: null,
+      running: false,
+    }
+  }
   const res = await authFetch(`${API_BASE}/api/sync/status`, { cache: 'no-store' })
   const status = await parseJson<ApiSyncStatus>(res)
   return {
@@ -484,6 +644,15 @@ export async function fetchSyncStatus(): Promise<SyncStatus> {
 }
 
 export async function triggerSyncPush(): Promise<ApiSyncPushResult> {
+  if (await shouldUseLocal()) {
+    return {
+      processed: 0,
+      succeeded: 0,
+      failed: 0,
+      skipped: 0,
+      running: false,
+    }
+  }
   const res = await authFetch(`${API_BASE}/api/sync/push`, {
     method: 'POST',
     cache: 'no-store',

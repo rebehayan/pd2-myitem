@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { withBasePath } from '../lib/asset-path'
+import { openOverlayInBrowser } from '../lib/open-overlay'
 import { useUiLanguage } from '../lib/ui-language-context'
 
 type NotFoundPageProps = {
@@ -38,9 +38,15 @@ export function NotFoundPage({ overlayMode = false }: NotFoundPageProps) {
         <Link to="/" className="button-secondary">
           {text.home}
         </Link>
-        <a href={withBasePath('overlay')} className="button-secondary" target="_blank" rel="noreferrer">
+        <button
+          type="button"
+          className="button-secondary"
+          onClick={() => {
+            void openOverlayInBrowser()
+          }}
+        >
           {text.overlay}
-        </a>
+        </button>
       </div>
     </section>
   )

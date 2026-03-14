@@ -13,7 +13,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import { useAuth } from './lib/auth-context'
-import { withBasePath } from './lib/asset-path'
+import { openOverlayInBrowser } from './lib/open-overlay'
 import { startTauriClipboardCapture } from './lib/tauri-clipboard-capture'
 import { useUiLanguage } from './lib/ui-language-context'
 
@@ -124,9 +124,15 @@ function App() {
         <NavLink to="/" end>
           {text.dashboard}
         </NavLink>
-        <a href={withBasePath('overlay')} target="_blank" rel="noreferrer">
+        <button
+          type="button"
+          className="d2-button d2-button--secondary d2-button--sm"
+          onClick={() => {
+            void openOverlayInBrowser()
+          }}
+        >
           {text.overlay}
-        </a>
+        </button>
         <NavLink to="/today">{text.today}</NavLink>
         <NavLink to="/guide">{text.guide}</NavLink>
         <NavLink to="/settings">{text.settings}</NavLink>

@@ -1,6 +1,8 @@
 import cors from 'cors'
 import express from 'express'
 import type { Request, Response } from 'express'
+import fs from 'node:fs'
+import path from 'node:path'
 import { z } from 'zod'
 import {
   clearAllItems,
@@ -50,6 +52,30 @@ app.use(
   }),
 )
 app.use(express.json())
+
+const iconStaticCandidates = [
+  path.resolve(process.cwd(), 'public', 'icons'),
+  path.resolve(process.cwd(), 'dist', 'icons'),
+  path.resolve(process.cwd(), '_up_', 'public', 'icons'),
+  path.resolve(process.cwd(), 'app', 'public', 'icons'),
+  path.resolve(process.cwd(), 'app', 'dist', 'icons'),
+  path.resolve(process.cwd(), 'app', '_up_', 'public', 'icons'),
+]
+
+const iconStaticRoots = Array.from(
+  new Set(iconStaticCandidates.filter((candidate) => fs.existsSync(candidate))),
+)
+
+for (const root of iconStaticRoots) {
+  app.use(
+    '/icons',
+    express.static(root, {
+      fallthrough: true,
+      immutable: false,
+      maxAge: '1h',
+    }),
+  )
+}
 
 const publicRoutes = new Set(['/api/health', '/api/today/public'])
 const allowGuestLocalApi =

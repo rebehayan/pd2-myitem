@@ -3,5 +3,5 @@
   "identifier": "default",
   "description": "Default capability for the desktop window",
   "windows": ["main"],
-  "permissions": ["core:default", "updater:default", "clipboard-manager:default"]
+  "permissions": ["core:default", "updater:default", "clipboard-manager:allow-read-text", "shell:allow-open"]
 }

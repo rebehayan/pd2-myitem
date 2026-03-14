@@ -30,3 +30,4 @@ data/*.sqlite-wal
 
 .vercel
 .env
+.tauri

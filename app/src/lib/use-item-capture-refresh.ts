@@ -25,7 +25,9 @@ export function useItemCaptureRefresh(onRefresh: () => void, options: ItemCaptur
     let timeouts: number[] = []
 
     const clearTimeouts = () => {
-      timeouts.forEach((timeoutId) => window.clearTimeout(timeoutId))
+      timeouts.forEach((timeoutId) => {
+        window.clearTimeout(timeoutId)
+      })
       timeouts = []
     }
 
@@ -48,8 +50,12 @@ export function useItemCaptureRefresh(onRefresh: () => void, options: ItemCaptur
 
     const apiBase = import.meta.env.VITE_API_BASE ?? ''
     let eventSource: EventSource | null = null
+    const localCaptureEvent = 'pd2:item-captured'
 
     const startStream = async () => {
+      if (!apiBase) {
+        return
+      }
       const token = await getAccessToken()
       if (disposed) {
         return
@@ -64,12 +70,23 @@ export function useItemCaptureRefresh(onRefresh: () => void, options: ItemCaptur
       }
     }
 
+    const onLocalCaptured = () => runBurst()
+    const onStorageChanged = (event: StorageEvent) => {
+      if (event.key === 'pd2_local_items_v1') {
+        runBurst()
+      }
+    }
+
+    window.addEventListener(localCaptureEvent, onLocalCaptured)
+    window.addEventListener('storage', onStorageChanged)
     void startStream()
 
     return () => {
       disposed = true
       clearTimeouts()
       eventSource?.close()
+      window.removeEventListener(localCaptureEvent, onLocalCaptured)
+      window.removeEventListener('storage', onStorageChanged)
     }
   }, [enabled, burstCount, burstIntervalMs])
 }

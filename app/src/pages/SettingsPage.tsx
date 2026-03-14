@@ -114,6 +114,11 @@ export function SettingsPage() {
           updateInstallFail: '업데이트 설치에 실패했습니다.',
           updateCurrent: '현재 버전',
           updateNext: '업데이트 버전',
+          captureTitle: '클립보드 캡처 상태',
+          captureStatus: '상태',
+          captureSource: '소스',
+          captureLastSeen: '마지막 감지 시각',
+          captureLastError: '최근 캡처 오류',
           save: '설정 저장',
         }
       : {
@@ -160,6 +165,11 @@ export function SettingsPage() {
           updateInstallFail: 'Failed to install update.',
           updateCurrent: 'Current Version',
           updateNext: 'Update Version',
+          captureTitle: 'Clipboard Capture Status',
+          captureStatus: 'Status',
+          captureSource: 'Source',
+          captureLastSeen: 'Last Seen At',
+          captureLastError: 'Last Capture Error',
           save: 'Save settings',
         }
   const [settings, setSettings] = useState<AppSettings>(defaultAppSettings)
@@ -169,6 +179,7 @@ export function SettingsPage() {
   const [updateStatus, setUpdateStatus] = useState<AppUpdateSummary | null>(null)
   const [updateMessage, setUpdateMessage] = useState('')
   const [updateBusy, setUpdateBusy] = useState(false)
+  const [captureDebug, setCaptureDebug] = useState({ status: '', source: '', lastSeenAt: '', lastError: '' })
   const [message, setMessage] = useState<string>('')
   const [hasHydrated, setHasHydrated] = useState(false)
   const [activeTab, setActiveTab] = useState<'overlay' | 'sharing'>(() => {
@@ -247,6 +258,23 @@ export function SettingsPage() {
       disposed = true
     }
   }, [text.updateAvailable, text.updateCheckFail, text.updateLatest, text.updateNoSupport])
+
+  useEffect(() => {
+    const readCaptureDebug = () => {
+      setCaptureDebug({
+        status: window.localStorage.getItem('pd2_capture_status') ?? '',
+        source: window.localStorage.getItem('pd2_capture_source') ?? '',
+        lastSeenAt: window.localStorage.getItem('pd2_capture_last_seen_at') ?? '',
+        lastError: window.localStorage.getItem('pd2_capture_last_error') ?? '',
+      })
+    }
+
+    readCaptureDebug()
+    const timer = window.setInterval(readCaptureDebug, 3000)
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [])
 
   useEffect(() => {
     window.localStorage.setItem('overlay_title_preview_active', 'true')
@@ -649,6 +677,16 @@ export function SettingsPage() {
           </button>
         </div>
         {updateMessage ? <p>{updateMessage}</p> : null}
+      </section>
+
+      <section className="d2-panel" aria-label="Clipboard capture status panel">
+        <h3>{text.captureTitle}</h3>
+        <div className="settings-grid settings-grid--title">
+          <p>{text.captureStatus}: {captureDebug.status || text.syncNone}</p>
+          <p>{text.captureSource}: {captureDebug.source || text.syncNone}</p>
+          <p>{text.captureLastSeen}: {captureDebug.lastSeenAt ? new Date(captureDebug.lastSeenAt).toLocaleString() : text.syncNone}</p>
+          <p>{text.captureLastError}: {captureDebug.lastError || text.syncNone}</p>
+        </div>
       </section>
 
       {message ? <p>{message}</p> : null}

@@ -7,18 +7,18 @@ if errorlevel 1 (
   exit /b %errorlevel%
 )
 
-set "SRC_SETUP=%~dp0..\src-tauri\target\release\bundle\nsis\PD2 Broadcast Item Tracker_0.1.0_x64-setup.exe"
-set "SRC_MSI=%~dp0..\src-tauri\target\release\bundle\msi\PD2 Broadcast Item Tracker_0.1.0_x64_en-US.msi"
-set "DST_SETUP=%~dp0..\..\PD2 Broadcast Item Tracker_0.1.0_x64-setup.exe"
-set "DST_MSI=%~dp0..\..\PD2 Broadcast Item Tracker_0.1.0_x64_en-US.msi"
+for /f "usebackq delims=" %%V in (`powershell -NoProfile -Command "(Get-Content '%~dp0..\src-tauri\tauri.conf.json' -Raw | ConvertFrom-Json).version"`) do set "APP_VERSION=%%V"
 
-if not exist "%SRC_SETUP%" (
-  echo [installer-update] missing setup: %SRC_SETUP%
+if "%APP_VERSION%"=="" (
+  echo [installer-update] failed to resolve version from tauri.conf.json
   exit /b 1
 )
 
-if not exist "%SRC_MSI%" (
-  echo [installer-update] missing msi: %SRC_MSI%
+set "SRC_SETUP=%~dp0..\src-tauri\target\release\bundle\nsis\PD2 Broadcast Item Tracker_%APP_VERSION%_x64-setup.exe"
+set "DST_SETUP=%~dp0..\..\PD2 Broadcast Item Tracker_%APP_VERSION%_x64-setup.exe"
+
+if not exist "%SRC_SETUP%" (
+  echo [installer-update] missing setup: %SRC_SETUP%
   exit /b 1
 )
 
@@ -28,12 +28,5 @@ if errorlevel 1 (
   exit /b %errorlevel%
 )
 
-copy /y "%SRC_MSI%" "%DST_MSI%" >nul
-if errorlevel 1 (
-  echo [installer-update] msi copy failed
-  exit /b %errorlevel%
-)
-
 echo [installer-update] setup ready: %DST_SETUP%
-echo [installer-update] msi ready: %DST_MSI%
 exit /b 0
