@@ -633,6 +633,17 @@ body.overlay-mode {
   opacity: 1;
 }
 
+.overlay-row--clickable {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.overlay-row--clickable:focus-visible {
+  outline: 2px solid rgba(229, 200, 116, 0.9);
+  outline-offset: 1px;
+}
+
 .overlay-row.item-themed {
   background: var(--item-theme-bg, rgba(12, 12, 14, 0.78));
 }

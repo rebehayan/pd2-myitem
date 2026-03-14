@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import './App.css'
 import './components/d2-ui.css'
@@ -13,6 +14,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import { useAuth } from './lib/auth-context'
 import { withBasePath } from './lib/asset-path'
+import { startTauriClipboardCapture } from './lib/tauri-clipboard-capture'
 import { useUiLanguage } from './lib/ui-language-context'
 
 function App() {
@@ -56,6 +58,13 @@ function App() {
   const isTodayRoute = location.pathname === '/today' || location.pathname === '/today/'
   const todayParams = new URLSearchParams(location.search)
   const isTodaySharedRoute = isTodayRoute && Boolean(todayParams.get('key') ?? todayParams.get('token'))
+
+  useEffect(() => {
+    const stopCapture = startTauriClipboardCapture()
+    return () => {
+      stopCapture()
+    }
+  }, [])
 
   if (loading) {
     return (

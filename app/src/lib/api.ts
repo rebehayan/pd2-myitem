@@ -49,18 +49,15 @@ async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
 
 async function shouldUseLocal(): Promise<boolean> {
   const token = await getAccessToken()
-  if (token) {
-    return false
-  }
-
-  if (!preferApiWithoutAuth) {
-    return true
-  }
 
   const now = Date.now()
   if (!apiReachabilityChecked || now - apiReachabilityCheckedAt > apiReachabilityTtlMs) {
     try {
-      const res = await fetch(`${API_BASE}/api/health`, { cache: 'no-store' })
+      const headers = new Headers()
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`)
+      }
+      const res = await fetch(`${API_BASE}/api/health`, { cache: 'no-store', headers })
       apiReachable = res.ok
     } catch {
       apiReachable = false
@@ -69,7 +66,15 @@ async function shouldUseLocal(): Promise<boolean> {
     apiReachabilityCheckedAt = now
   }
 
-  return !apiReachable
+  if (!apiReachable) {
+    return true
+  }
+
+  if (!token && !preferApiWithoutAuth) {
+    return true
+  }
+
+  return false
 }
 
 function sortByCapturedAtDesc<T extends { capturedAt: string }>(items: T[]): T[] {

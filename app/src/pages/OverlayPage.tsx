@@ -120,6 +120,7 @@ export function OverlayPage() {
           corrupted: 'Corrupted',
           ethereal: 'Ethereal',
           socketed: 'Socketed',
+          openDetail: '아이템 상세 열기',
         }
       : {
           fallbackTitle: 'Overlay Feed',
@@ -132,6 +133,7 @@ export function OverlayPage() {
           corrupted: 'Corrupted',
           ethereal: 'Ethereal',
           socketed: 'Socketed',
+          openDetail: 'Open item details',
         }
   const [items, setItems] = useState<ItemSummary[]>([])
   const [newIds, setNewIds] = useState<Set<string>>(new Set())
@@ -405,10 +407,14 @@ export function OverlayPage() {
           const visualState = getItemVisualState({ analysisTags: item.analysisTags })
 
           return (
-            <article
+            <a
               key={item.id}
-              className={`overlay-row item-themed ${newIds.has(item.id) ? 'is-new' : ''}`}
+              className={`overlay-row item-themed overlay-row--clickable ${newIds.has(item.id) ? 'is-new' : ''}`}
               style={theme.style}
+              href={withBasePath(`item/${encodeURIComponent(item.id)}`)}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${item.displayName} - ${text.openDetail}`}
             >
               {minimalMode ? null : <OverlayThumb item={item} />}
               <div className="overlay-row__body">
@@ -433,7 +439,7 @@ export function OverlayPage() {
                   </div>
                 )}
               </div>
-            </article>
+            </a>
           )
         })}
 
