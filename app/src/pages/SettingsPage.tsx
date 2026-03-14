@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { fetchSettings, updateSettings } from '../lib/api'
-import type { AppSettings } from '../lib/types'
+import { fetchSettings, fetchSyncStatus, triggerSyncPush, updateSettings } from '../lib/api'
+import type { AppSettings, SyncStatus } from '../lib/types'
 import { defaultAppSettings } from '../lib/settings-defaults'
 import { useUiLanguage } from '../lib/ui-language-context'
 
@@ -89,6 +89,18 @@ export function SettingsPage() {
           qrEnable: 'QR 공개 페이지 사용',
           qrToken: 'QR 토큰',
           regen: '토큰 재생성',
+          syncTitle: '동기화 상태',
+          syncPendingItems: '대기 아이템',
+          syncFailedItems: '실패 아이템',
+          syncQueuedOps: '큐 작업 수',
+          syncFailedOps: '실패 작업 수',
+          syncLastError: '최근 오류',
+          syncNextRetry: '다음 재시도',
+          syncRunning: '동기화 실행 중',
+          syncRunNow: '지금 동기화 실행',
+          syncRunDone: '동기화 실행 완료',
+          syncUnavailable: '동기화 상태를 불러오지 못했습니다.',
+          syncNone: '없음',
           save: '설정 저장',
         }
       : {
@@ -111,9 +123,24 @@ export function SettingsPage() {
           qrEnable: 'Enable QR public page',
           qrToken: 'QR Token',
           regen: 'Regenerate Token',
+          syncTitle: 'Sync Status',
+          syncPendingItems: 'Pending Items',
+          syncFailedItems: 'Failed Items',
+          syncQueuedOps: 'Queued Operations',
+          syncFailedOps: 'Failed Operations',
+          syncLastError: 'Last Error',
+          syncNextRetry: 'Next Retry',
+          syncRunning: 'Sync Running',
+          syncRunNow: 'Run Sync Now',
+          syncRunDone: 'Sync push finished',
+          syncUnavailable: 'Failed to load sync status.',
+          syncNone: 'None',
           save: 'Save settings',
         }
   const [settings, setSettings] = useState<AppSettings>(defaultAppSettings)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null)
+  const [syncStatusMessage, setSyncStatusMessage] = useState('')
+  const [syncPushMessage, setSyncPushMessage] = useState('')
   const [message, setMessage] = useState<string>('')
   const [hasHydrated, setHasHydrated] = useState(false)
   const [activeTab, setActiveTab] = useState<'overlay' | 'sharing'>(() => {
@@ -135,6 +162,34 @@ export function SettingsPage() {
         setHasHydrated(true)
       })
   }, [text.loadFail])
+
+  useEffect(() => {
+    let disposed = false
+    const loadSyncStatus = async () => {
+      try {
+        const status = await fetchSyncStatus()
+        if (!disposed) {
+          setSyncStatus(status)
+          setSyncStatusMessage('')
+        }
+      } catch {
+        if (!disposed) {
+          setSyncStatus(null)
+          setSyncStatusMessage(text.syncUnavailable)
+        }
+      }
+    }
+
+    void loadSyncStatus()
+    const intervalId = window.setInterval(() => {
+      void loadSyncStatus()
+    }, 10000)
+
+    return () => {
+      disposed = true
+      window.clearInterval(intervalId)
+    }
+  }, [text.syncUnavailable])
 
   useEffect(() => {
     window.localStorage.setItem('overlay_title_preview_active', 'true')
@@ -197,6 +252,19 @@ export function SettingsPage() {
       setMessage(text.saveOk)
     } catch {
       setMessage(text.saveFail)
+    }
+  }
+
+  const runSyncPush = async () => {
+    try {
+      const result = await triggerSyncPush()
+      const status = await fetchSyncStatus()
+      setSyncStatus(status)
+      setSyncPushMessage(
+        `${text.syncRunDone} (${result.processed}/${result.succeeded}/${result.failed}/${result.skipped})`,
+      )
+    } catch {
+      setSyncPushMessage(text.syncUnavailable)
     }
   }
 
@@ -437,6 +505,26 @@ export function SettingsPage() {
       <button type="button" className="d2-button d2-button--primary" onClick={save}>
         {text.save}
       </button>
+
+      <section className="d2-panel" aria-label="Sync status panel">
+        <h3>{text.syncTitle}</h3>
+        {syncStatus ? (
+          <div className="settings-grid settings-grid--title">
+            <p>{text.syncPendingItems}: {syncStatus.pendingItems}</p>
+            <p>{text.syncFailedItems}: {syncStatus.failedItems}</p>
+            <p>{text.syncQueuedOps}: {syncStatus.queuedOperations}</p>
+            <p>{text.syncFailedOps}: {syncStatus.failedOperations}</p>
+            <p>{text.syncLastError}: {syncStatus.lastError ?? text.syncNone}</p>
+            <p>{text.syncNextRetry}: {syncStatus.nextRetryAt ? new Date(syncStatus.nextRetryAt).toLocaleString() : text.syncNone}</p>
+            <p>{text.syncRunning}: {syncStatus.running ? 'true' : 'false'}</p>
+          </div>
+        ) : null}
+        <button type="button" className="d2-button d2-button--secondary d2-button--sm" onClick={runSyncPush}>
+          {text.syncRunNow}
+        </button>
+        {syncPushMessage ? <p>{syncPushMessage}</p> : null}
+        {syncStatusMessage ? <p>{syncStatusMessage}</p> : null}
+      </section>
 
       {message ? <p>{message}</p> : null}
     </section>

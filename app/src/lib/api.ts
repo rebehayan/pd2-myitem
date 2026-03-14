@@ -1,4 +1,4 @@
-import type { AppSettings, ItemDetail, ItemSummary, TodayPublicItem, TodayPublicPayload, TodayStats } from './types'
+import type { AppSettings, ItemDetail, ItemSummary, SyncStatus, TodayPublicItem, TodayPublicPayload, TodayStats } from './types'
 import { defaultAppSettings } from './settings-defaults'
 import {
   clearLocalItems,
@@ -444,4 +444,44 @@ export async function syncLocalDataToServer(): Promise<{ importedItems: number; 
     clearLocalSettings()
   }
   return { importedItems: payload.imported_items, importedSettings: payload.imported_settings }
+}
+
+interface ApiSyncStatus {
+  pendingItems: number
+  failedItems: number
+  queuedOperations: number
+  failedOperations: number
+  lastError: string | null
+  nextRetryAt: string | null
+  running: boolean
+}
+
+interface ApiSyncPushResult {
+  processed: number
+  succeeded: number
+  failed: number
+  skipped: number
+  running: boolean
+}
+
+export async function fetchSyncStatus(): Promise<SyncStatus> {
+  const res = await authFetch(`${API_BASE}/api/sync/status`, { cache: 'no-store' })
+  const status = await parseJson<ApiSyncStatus>(res)
+  return {
+    pendingItems: status.pendingItems,
+    failedItems: status.failedItems,
+    queuedOperations: status.queuedOperations,
+    failedOperations: status.failedOperations,
+    lastError: status.lastError,
+    nextRetryAt: status.nextRetryAt,
+    running: status.running,
+  }
+}
+
+export async function triggerSyncPush(): Promise<ApiSyncPushResult> {
+  const res = await authFetch(`${API_BASE}/api/sync/push`, {
+    method: 'POST',
+    cache: 'no-store',
+  })
+  return parseJson<ApiSyncPushResult>(res)
 }

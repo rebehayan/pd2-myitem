@@ -38,6 +38,16 @@ export interface TodayPublicPayload {
   items: TodayPublicItem[]
 }
 
+export interface SyncStatus {
+  pendingItems: number
+  failedItems: number
+  queuedOperations: number
+  failedOperations: number
+  lastError: string | null
+  nextRetryAt: string | null
+  running: boolean
+}
+
 export interface AppSettings {
   overlay_item_limit: number
   overlay_opacity: number
