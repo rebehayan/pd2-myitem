@@ -26,7 +26,35 @@ export function readLocalItems(): ItemDetail[] {
   if (!parsed || !Array.isArray(parsed)) {
     return []
   }
-  return parsed.filter((item): item is ItemDetail => Boolean(item && typeof item.id === 'string'))
+
+  const items = parsed.filter((item): item is ItemDetail => Boolean(item && typeof item.id === 'string'))
+  let didChange = false
+
+  const normalized = items.map((item) => {
+    const resolvedThumbnail = resolveLocalThumbnailPath({
+      name: item.name,
+      type: item.type,
+      quality: item.quality,
+      category: item.category ?? '',
+      existingThumbnail: normalizeThumbnailPath(item.thumbnail ?? null),
+    })
+
+    if (resolvedThumbnail !== item.thumbnail) {
+      didChange = true
+      return {
+        ...item,
+        thumbnail: resolvedThumbnail,
+      }
+    }
+
+    return item
+  })
+
+  if (didChange) {
+    safeWriteJson(LOCAL_ITEMS_KEY, normalized)
+  }
+
+  return normalized
 }
 
 export function writeLocalItems(items: ItemDetail[]) {

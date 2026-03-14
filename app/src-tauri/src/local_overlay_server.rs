@@ -155,6 +155,15 @@ struct SharedState {
     settings_path: PathBuf,
 }
 
+#[derive(Clone, Deserialize)]
+struct FamilyMapEntry {
+    category: String,
+    subtype: String,
+    normal: Option<String>,
+    exceptional: Option<String>,
+    elite: Option<String>,
+}
+
 fn unique_image_map() -> &'static HashMap<String, String> {
     static UNIQUE_MAP: OnceLock<HashMap<String, String>> = OnceLock::new();
     UNIQUE_MAP.get_or_init(|| {
@@ -168,6 +177,32 @@ fn category_icon_map() -> &'static HashMap<String, String> {
     CATEGORY_MAP.get_or_init(|| {
         let raw = include_str!("../../src/data/category-icon-map.json");
         serde_json::from_str::<HashMap<String, String>>(raw).unwrap_or_default()
+    })
+}
+
+fn family_by_type_map() -> &'static HashMap<String, FamilyMapEntry> {
+    static FAMILY_BY_TYPE: OnceLock<HashMap<String, FamilyMapEntry>> = OnceLock::new();
+    FAMILY_BY_TYPE.get_or_init(|| {
+        let armor_raw = include_str!("../../data/armor-family-map.json");
+        let weapon_raw = include_str!("../../data/weapon-family-map.json");
+        let armor = serde_json::from_str::<Vec<FamilyMapEntry>>(armor_raw).unwrap_or_default();
+        let weapon = serde_json::from_str::<Vec<FamilyMapEntry>>(weapon_raw).unwrap_or_default();
+        let mut map = HashMap::new();
+        for entry in armor.into_iter().chain(weapon.into_iter()) {
+            for name in [
+                entry.normal.clone(),
+                entry.exceptional.clone(),
+                entry.elite.clone(),
+            ] {
+                if let Some(type_name) = name {
+                    let normalized = normalize_type_key(&type_name);
+                    if !normalized.is_empty() {
+                        map.insert(normalized, entry.clone());
+                    }
+                }
+            }
+        }
+        map
     })
 }
 
@@ -287,21 +322,140 @@ fn as_f64(value: &Value) -> Option<f64> {
     value.as_f64()
 }
 
+fn normalize_type_key(value: &str) -> String {
+    let mut out = String::new();
+    let mut prev_is_underscore = false;
+    for ch in value.trim().to_lowercase().chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch);
+            prev_is_underscore = false;
+            continue;
+        }
+        if ch.is_whitespace()
+            || ch == '/'
+            || ch == '\''
+            || ch == ','
+            || ch == '('
+            || ch == ')'
+            || ch == '-'
+            || ch == '_'
+        {
+            if !prev_is_underscore {
+                out.push('_');
+                prev_is_underscore = true;
+            }
+            continue;
+        }
+        if !prev_is_underscore {
+            out.push('_');
+            prev_is_underscore = true;
+        }
+    }
+    out.trim_matches('_').to_string()
+}
+
+fn to_display_stem(value: &str) -> String {
+    value
+        .trim()
+        .replace(['(', ')'], " ")
+        .replace(['\'', '’'], "")
+        .replace(['/', ',', '.', '-'], " ")
+        .split_whitespace()
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let mut chars = part.chars();
+            if let Some(first) = chars.next() {
+                let mut out = String::new();
+                out.extend(first.to_uppercase());
+                out.push_str(chars.as_str());
+                out
+            } else {
+                String::new()
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("_")
+}
+
+fn infer_category_from_family(item_type: &str) -> Option<String> {
+    let family = family_by_type_map().get(&normalize_type_key(item_type))?;
+    let subtype = family.subtype.trim().to_lowercase();
+    if subtype.contains("helm") {
+        return Some("helm".to_string());
+    }
+    if subtype.contains("shield")
+        || subtype.contains("shrunken_head")
+        || subtype.contains("voodoo_head")
+    {
+        return Some("shield".to_string());
+    }
+    if subtype.contains("gloves") {
+        return Some("gloves".to_string());
+    }
+    if subtype.contains("boots") {
+        return Some("boots".to_string());
+    }
+    if subtype.contains("belt") {
+        return Some("belt".to_string());
+    }
+
+    let base_category = family.category.trim().to_lowercase();
+    if base_category == "weapon" {
+        return Some("weapon".to_string());
+    }
+    if base_category == "armor" {
+        return Some("armor".to_string());
+    }
+
+    None
+}
+
+fn resolve_family_representative_path(item_type: &str) -> Option<String> {
+    let family = family_by_type_map().get(&normalize_type_key(item_type))?;
+    let representative = family
+        .normal
+        .as_deref()
+        .or(family.exceptional.as_deref())
+        .or(family.elite.as_deref())?;
+    let stem = to_display_stem(representative);
+    if stem.is_empty() {
+        return None;
+    }
+    let base_category = family.category.trim().to_lowercase();
+    let folder = if base_category == "weapon" {
+        "weapons"
+    } else {
+        "non-weapons"
+    };
+    Some(format!("/icons/{folder}/{stem}.webp"))
+}
+
 fn classify_category(item_type: &str, quantity: Option<i32>) -> String {
-    let normalized = item_type.trim().to_lowercase();
-    if normalized.contains("rune") {
+    if let Some(by_family) = infer_category_from_family(item_type) {
+        return by_family;
+    }
+
+    let normalized = normalize_type_key(item_type);
+    if normalized.contains("rune") || normalized.contains("룬") {
         return "rune".to_string();
     }
-    if normalized.contains("map") || normalized.contains("shard") {
+    if normalized.contains("map")
+        || normalized.contains("shard")
+        || normalized.contains("맵")
+        || normalized.contains("파편")
+    {
         return "map".to_string();
     }
     if quantity.unwrap_or(0) > 1 {
         return "material".to_string();
     }
-    if normalized.contains("ring") {
+    if normalized.contains("ring") || normalized.contains("반지") {
         return "jewelry".to_string();
     }
-    if normalized.contains("amulet") || normalized.contains("necklace") {
+    if normalized.contains("amulet")
+        || normalized.contains("necklace")
+        || normalized.contains("목걸이")
+    {
         return "jewelry".to_string();
     }
     if normalized.contains("charm") {
@@ -316,20 +470,28 @@ fn classify_category(item_type: &str, quantity: Option<i32>) -> String {
     }
     if normalized.contains("shield")
         || normalized.contains("buckler")
+        || normalized.contains("rondache")
+        || normalized.contains("totem")
+        || normalized.contains("buckler")
         || normalized.contains("aegis")
     {
         return "shield".to_string();
     }
-    if normalized.contains("belt") || normalized.contains("sash") {
+    if normalized.contains("belt") || normalized.contains("sash") || normalized.contains("girdle") {
         return "belt".to_string();
     }
     if normalized.contains("glove")
         || normalized.contains("gauntlet")
         || normalized.contains("bracer")
+        || normalized.contains("bracers")
+        || normalized.contains("mitts")
     {
         return "gloves".to_string();
     }
-    if normalized.contains("boot") || normalized.contains("greave") {
+    if normalized.contains("boot")
+        || normalized.contains("greave")
+        || normalized.contains("sabatons")
+    {
         return "boots".to_string();
     }
     if normalized.contains("helm")
@@ -404,7 +566,7 @@ fn resolve_thumbnail(item_name: &str, item_type: &str, quality: &str, category: 
                 return format!("/icons/{trimmed}");
             }
 
-            let normalized_type = item_type.trim().to_lowercase();
+            let normalized_type = normalize_type_key(item_type);
             if normalized_type.contains("ring") {
                 return format!("/icons/rings/{trimmed}");
             }
@@ -427,17 +589,25 @@ fn resolve_thumbnail(item_name: &str, item_type: &str, quality: &str, category: 
         }
     }
 
-    let normalized = item_type.trim().to_lowercase();
-    if normalized.contains("rune") {
+    let normalized = normalize_type_key(item_type);
+    if normalized.contains("rune") || normalized.contains("룬") {
         return "/icons/rune/RuneEl.webp".to_string();
     }
-    if normalized.contains("map") || normalized.contains("shard") || category == "map" {
+    if normalized.contains("map")
+        || normalized.contains("shard")
+        || normalized.contains("맵")
+        || normalized.contains("파편")
+        || category == "map"
+    {
         return "/icons/maps/Worldstone_Shard.webp".to_string();
     }
-    if normalized.contains("ring") {
+    if normalized.contains("ring") || normalized.contains("반지") {
         return "/icons/rings/Ring_1.webp".to_string();
     }
-    if normalized.contains("amulet") || normalized.contains("necklace") {
+    if normalized.contains("amulet")
+        || normalized.contains("necklace")
+        || normalized.contains("목걸이")
+    {
         return "/icons/amulets/Amulet_1.webp".to_string();
     }
     if normalized.contains("jewel") {
@@ -448,6 +618,10 @@ fn resolve_thumbnail(item_name: &str, item_type: &str, quality: &str, category: 
     }
     if normalized.contains("decapitator") {
         return "/icons/weapons/War_Axe.webp".to_string();
+    }
+
+    if let Some(family_path) = resolve_family_representative_path(item_type) {
+        return family_path;
     }
 
     if let Some(mapped) = category_icon_map().get(category) {

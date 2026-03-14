@@ -1,6 +1,8 @@
 import uniqueImageMap from '../data/unique-image-map.json'
 import iconMap from '../data/icon-map.json'
 import categoryIconMap from '../data/category-icon-map.json'
+import armorFamilyMap from '../../data/armor-family-map.json'
+import weaponFamilyMap from '../../data/weapon-family-map.json'
 
 type ResolveLocalThumbnailArgs = {
   name: string | null
@@ -10,9 +12,19 @@ type ResolveLocalThumbnailArgs = {
   existingThumbnail?: string | null
 }
 
+type FamilyMapEntry = {
+  family: string
+  category: string
+  subtype: string
+  normal?: string
+  exceptional?: string
+  elite?: string
+}
+
 const uniqueImageRecord = uniqueImageMap as Record<string, string>
 const exactIconMap = iconMap as Record<string, string>
 const fallbackCategoryIconMap = categoryIconMap as Record<string, string>
+const familyMapEntries = [...(armorFamilyMap as FamilyMapEntry[]), ...(weaponFamilyMap as FamilyMapEntry[])]
 
 const localCategoryFallbackDefaults: Record<string, string> = {
   boots: 'non-weapons/Boots.webp',
@@ -70,6 +82,7 @@ const runeOrder = [
 ]
 
 let normalizedUniqueMapCache: Record<string, string> | null = null
+let familyByTypeCache: Record<string, FamilyMapEntry> | null = null
 
 function normalizeUniqueNameKey(value: string): string {
   return value
@@ -91,6 +104,19 @@ function normalizeTypeKey(value: string): string {
     .replaceAll(/^_+|_+$/g, '')
 }
 
+function toDisplayStem(value: string): string {
+  return value
+    .trim()
+    .replaceAll(/\([^)]*\)/g, ' ')
+    .replaceAll(/['’]/g, '')
+    .replaceAll(/[/',.-]/g, ' ')
+    .replaceAll(/\s+/g, ' ')
+    .split(' ')
+    .filter((token) => token.length > 0)
+    .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+    .join('_')
+}
+
 function getNormalizedUniqueMap(): Record<string, string> {
   if (normalizedUniqueMapCache) {
     return normalizedUniqueMapCache
@@ -99,6 +125,80 @@ function getNormalizedUniqueMap(): Record<string, string> {
   const entries = Object.entries(uniqueImageRecord).map(([key, value]) => [normalizeUniqueNameKey(key), value] as const)
   normalizedUniqueMapCache = Object.fromEntries(entries)
   return normalizedUniqueMapCache
+}
+
+function getFamilyByType(): Record<string, FamilyMapEntry> {
+  if (familyByTypeCache) {
+    return familyByTypeCache
+  }
+
+  const byType: Record<string, FamilyMapEntry> = {}
+  for (const entry of familyMapEntries) {
+    const names = [entry.normal, entry.exceptional, entry.elite]
+    for (const name of names) {
+      if (!name || !name.trim()) {
+        continue
+      }
+      byType[normalizeTypeKey(name)] = entry
+    }
+  }
+
+  familyByTypeCache = byType
+  return familyByTypeCache
+}
+
+function inferCategoryFromFamily(type: string): string | null {
+  const familyEntry = getFamilyByType()[normalizeTypeKey(type)]
+  if (!familyEntry) {
+    return null
+  }
+
+  const subtype = familyEntry.subtype.trim().toLowerCase()
+  if (subtype.includes('helm')) {
+    return 'helm'
+  }
+  if (subtype.includes('shield') || subtype.includes('shrunken_head') || subtype.includes('voodoo_head')) {
+    return 'shield'
+  }
+  if (subtype.includes('gloves')) {
+    return 'gloves'
+  }
+  if (subtype.includes('boots')) {
+    return 'boots'
+  }
+  if (subtype.includes('belt')) {
+    return 'belt'
+  }
+  const baseCategory = familyEntry.category.trim().toLowerCase()
+  if (baseCategory === 'weapon') {
+    return 'weapon'
+  }
+  if (baseCategory === 'armor') {
+    return 'armor'
+  }
+
+  return null
+}
+
+function resolveFamilyRepresentativePath(type: string): string | null {
+  const familyEntry = getFamilyByType()[normalizeTypeKey(type)]
+  if (!familyEntry) {
+    return null
+  }
+
+  const representative = familyEntry.normal || familyEntry.exceptional || familyEntry.elite
+  if (!representative) {
+    return null
+  }
+
+  const stem = toDisplayStem(representative)
+  if (!stem) {
+    return null
+  }
+
+  const baseCategory = familyEntry.category.trim().toLowerCase()
+  const folder = baseCategory === 'weapon' ? 'weapons' : 'non-weapons'
+  return `${folder}/${stem}.webp`
 }
 
 function normalizeThumbnailPath(path: string | null | undefined): string | null {
@@ -134,6 +234,11 @@ function toIconPath(path: string): string {
 }
 
 function inferCategory(type: string, quantity: number | null): string {
+  const byFamily = inferCategoryFromFamily(type)
+  if (byFamily) {
+    return byFamily
+  }
+
   const normalized = type.trim().toLowerCase()
 
   if (normalized.includes('rune') || normalized.includes('룬')) {
@@ -185,7 +290,9 @@ function inferCategory(type: string, quantity: number | null): string {
     normalized.includes('mail') ||
     normalized.includes('plate') ||
     normalized.includes('robe') ||
-    normalized.includes('leather')
+    normalized.includes('leather') ||
+    normalized.includes('hide') ||
+    normalized.includes('coat')
   ) {
     return 'armor'
   }
@@ -193,6 +300,7 @@ function inferCategory(type: string, quantity: number | null): string {
     normalized.includes('sword') ||
     normalized.includes('axe') ||
     normalized.includes('mace') ||
+    normalized.includes('hammer') ||
     normalized.includes('scepter') ||
     normalized.includes('club') ||
     normalized.includes('bow') ||
@@ -208,7 +316,8 @@ function inferCategory(type: string, quantity: number | null): string {
     normalized.includes('talons') ||
     normalized.includes('spear') ||
     normalized.includes('wand') ||
-    normalized.includes('dagger')
+    normalized.includes('dagger') ||
+    normalized.includes('knife')
   ) {
     return 'weapon'
   }
@@ -218,26 +327,6 @@ function inferCategory(type: string, quantity: number | null): string {
 function isGenericUnknown(path: string): boolean {
   const normalized = path.trim().replace(/^\/+/, '').toLowerCase()
   return normalized === 'icons/generic/item_unknown.svg' || normalized === 'generic/item_unknown.svg'
-}
-
-function hasKnownIconFolder(path: string): boolean {
-  const normalized = path.trim().replace(/^\/+/, '').replace(/^icons\//i, '')
-  const firstSlash = normalized.indexOf('/')
-  if (firstSlash < 0) {
-    return false
-  }
-  const folder = normalized.slice(0, firstSlash).toLowerCase()
-  return [
-    'amulets',
-    'rings',
-    'maps',
-    'rune',
-    'charms_jewels',
-    'non-weapons',
-    'weapons',
-    'quivers',
-    'generic',
-  ].includes(folder)
 }
 
 function resolveRuneKey(type: string, name: string | null): string | null {
@@ -292,17 +381,12 @@ function resolveUniqueMappedPath(mapped: string, type: string, category: string)
 
 export function resolveLocalThumbnailPath(args: ResolveLocalThumbnailArgs): string {
   const existing = normalizeThumbnailPath(args.existingThumbnail)
-  const isRootIconFile = existing ? /^\/icons\/[^/]+\.[a-z0-9]+$/i.test(existing) : false
   const isAbsolute = existing
     ? existing.startsWith('http://') || existing.startsWith('https://') || existing.startsWith('data:') || existing.startsWith('blob:')
     : false
   if (existing && isAbsolute) {
     return existing
   }
-  if (existing && !existing.endsWith('/icons/generic/item_unknown.svg') && !isRootIconFile && hasKnownIconFolder(existing)) {
-    return existing
-  }
-
   const name = args.name?.trim() ?? ''
   const quality = args.quality.trim().toLowerCase()
   const category = args.category || inferCategory(args.type, null)
@@ -324,6 +408,11 @@ export function resolveLocalThumbnailPath(args: ResolveLocalThumbnailArgs): stri
   const exactMapped = exactIconMap[normalizedType]
   if (exactMapped && !isGenericUnknown(exactMapped)) {
     return toIconPath(exactMapped)
+  }
+
+  const familyPath = resolveFamilyRepresentativePath(args.type)
+  if (familyPath) {
+    return toIconPath(familyPath)
   }
 
   if (normalizedType.includes('map') || normalizedType.includes('shard') || normalizedType.includes('맵') || normalizedType.includes('파편')) {
