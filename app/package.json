@@ -14,11 +14,15 @@
     "report:unique-images": "node scripts/report-unique-images.mjs",
     "preview": "vite preview",
     "tauri:dev": "scripts\\tauri-env.cmd npx tauri dev",
-    "tauri:build": "scripts\\tauri-env.cmd npx tauri build"
+    "tauri:build": "scripts\\tauri-env.cmd npx tauri build",
+    "tauri:portable:update": "scripts\\update-portable.cmd",
+    "tauri:installers:update": "scripts\\update-installers.cmd"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
     "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.0",
+    "@tauri-apps/plugin-updater": "^2.9.1",
     "better-sqlite3": "^12.6.2",
     "clipboardy": "^5.3.1",
     "cors": "^2.8.6",

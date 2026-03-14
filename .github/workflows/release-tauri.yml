@@ -1,0 +1,65 @@
+name: release-tauri
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Inject updater config
+        shell: pwsh
+        run: |
+          $path = "app/src-tauri/tauri.conf.json"
+          $config = Get-Content $path -Raw | ConvertFrom-Json
+          if (-not $config.plugins) {
+            $config | Add-Member -NotePropertyName plugins -NotePropertyValue ([pscustomobject]@{})
+          }
+          $endpoint = "https://github.com/${{ github.repository }}/releases/latest/download/latest.json"
+          $config.plugins.updater = [pscustomobject]@{
+            endpoints = @($endpoint)
+            pubkey = "${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}"
+          }
+          $config.bundle.createUpdaterArtifacts = $true
+          $json = $config | ConvertTo-Json -Depth 100
+          Set-Content -Path $path -Value $json -NoNewline
+
+      - name: Build and release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: app
+          tagName: ${{ github.ref_name }}
+          releaseName: PD2 Broadcast Item Tracker ${{ github.ref_name }}
+          releaseBody: |
+            ## Desktop Release
+            - Windows installer and updater artifacts
+            - Auto-update metadata published for in-app updates
+          releaseDraft: false
+          prerelease: false

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchSettings, fetchSyncStatus, triggerSyncPush, updateSettings } from '../lib/api'
+import { checkForAppUpdate, downloadAndInstallUpdate, type AppUpdateSummary } from '../lib/app-updater'
 import type { AppSettings, SyncStatus } from '../lib/types'
 import { defaultAppSettings } from '../lib/settings-defaults'
 import { useUiLanguage } from '../lib/ui-language-context'
@@ -101,6 +102,18 @@ export function SettingsPage() {
           syncRunDone: '동기화 실행 완료',
           syncUnavailable: '동기화 상태를 불러오지 못했습니다.',
           syncNone: '없음',
+          updateTitle: '앱 업데이트',
+          updateCheck: '업데이트 확인',
+          updateInstall: '업데이트 다운로드/설치',
+          updateNoSupport: '데스크톱 앱에서만 업데이트를 지원합니다.',
+          updateChecking: '업데이트를 확인하는 중입니다...',
+          updateLatest: '최신 버전입니다.',
+          updateAvailable: '새 버전이 있습니다.',
+          updateInstalled: '업데이트 설치가 완료되었습니다. 앱을 재시작하면 적용됩니다.',
+          updateCheckFail: '업데이트 확인에 실패했습니다.',
+          updateInstallFail: '업데이트 설치에 실패했습니다.',
+          updateCurrent: '현재 버전',
+          updateNext: '업데이트 버전',
           save: '설정 저장',
         }
       : {
@@ -135,12 +148,27 @@ export function SettingsPage() {
           syncRunDone: 'Sync push finished',
           syncUnavailable: 'Failed to load sync status.',
           syncNone: 'None',
+          updateTitle: 'App Update',
+          updateCheck: 'Check for updates',
+          updateInstall: 'Download and install update',
+          updateNoSupport: 'Updates are available only in desktop app runtime.',
+          updateChecking: 'Checking for updates...',
+          updateLatest: 'You are on the latest version.',
+          updateAvailable: 'A new version is available.',
+          updateInstalled: 'Update installed. Restart app to apply changes.',
+          updateCheckFail: 'Failed to check for updates.',
+          updateInstallFail: 'Failed to install update.',
+          updateCurrent: 'Current Version',
+          updateNext: 'Update Version',
           save: 'Save settings',
         }
   const [settings, setSettings] = useState<AppSettings>(defaultAppSettings)
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null)
   const [syncStatusMessage, setSyncStatusMessage] = useState('')
   const [syncPushMessage, setSyncPushMessage] = useState('')
+  const [updateStatus, setUpdateStatus] = useState<AppUpdateSummary | null>(null)
+  const [updateMessage, setUpdateMessage] = useState('')
+  const [updateBusy, setUpdateBusy] = useState(false)
   const [message, setMessage] = useState<string>('')
   const [hasHydrated, setHasHydrated] = useState(false)
   const [activeTab, setActiveTab] = useState<'overlay' | 'sharing'>(() => {
@@ -190,6 +218,35 @@ export function SettingsPage() {
       window.clearInterval(intervalId)
     }
   }, [text.syncUnavailable])
+
+  useEffect(() => {
+    let disposed = false
+    const initialCheck = async () => {
+      try {
+        const result = await checkForAppUpdate()
+        if (disposed) {
+          return
+        }
+        setUpdateStatus(result)
+        if (!result.supported) {
+          setUpdateMessage(text.updateNoSupport)
+        } else if (result.available) {
+          setUpdateMessage(text.updateAvailable)
+        } else {
+          setUpdateMessage(text.updateLatest)
+        }
+      } catch {
+        if (!disposed) {
+          setUpdateMessage(text.updateCheckFail)
+        }
+      }
+    }
+
+    void initialCheck()
+    return () => {
+      disposed = true
+    }
+  }, [text.updateAvailable, text.updateCheckFail, text.updateLatest, text.updateNoSupport])
 
   useEffect(() => {
     window.localStorage.setItem('overlay_title_preview_active', 'true')
@@ -265,6 +322,45 @@ export function SettingsPage() {
       )
     } catch {
       setSyncPushMessage(text.syncUnavailable)
+    }
+  }
+
+  const runCheckUpdate = async () => {
+    setUpdateBusy(true)
+    setUpdateMessage(text.updateChecking)
+    try {
+      const result = await checkForAppUpdate()
+      setUpdateStatus(result)
+      if (!result.supported) {
+        setUpdateMessage(text.updateNoSupport)
+      } else if (result.available) {
+        setUpdateMessage(text.updateAvailable)
+      } else {
+        setUpdateMessage(text.updateLatest)
+      }
+    } catch {
+      setUpdateMessage(text.updateCheckFail)
+    } finally {
+      setUpdateBusy(false)
+    }
+  }
+
+  const runInstallUpdate = async () => {
+    setUpdateBusy(true)
+    try {
+      const result = await downloadAndInstallUpdate()
+      setUpdateStatus(result)
+      if (!result.supported) {
+        setUpdateMessage(text.updateNoSupport)
+      } else if (!result.available) {
+        setUpdateMessage(text.updateLatest)
+      } else {
+        setUpdateMessage(text.updateInstalled)
+      }
+    } catch {
+      setUpdateMessage(text.updateInstallFail)
+    } finally {
+      setUpdateBusy(false)
     }
   }
 
@@ -524,6 +620,35 @@ export function SettingsPage() {
         </button>
         {syncPushMessage ? <p>{syncPushMessage}</p> : null}
         {syncStatusMessage ? <p>{syncStatusMessage}</p> : null}
+      </section>
+
+      <section className="d2-panel" aria-label="App update panel">
+        <h3>{text.updateTitle}</h3>
+        {updateStatus ? (
+          <div className="settings-grid settings-grid--title">
+            <p>{text.updateCurrent}: {updateStatus.currentVersion ?? text.syncNone}</p>
+            <p>{text.updateNext}: {updateStatus.nextVersion ?? text.syncNone}</p>
+          </div>
+        ) : null}
+        <div className="dashboard-list__actions">
+          <button
+            type="button"
+            className="d2-button d2-button--secondary d2-button--sm"
+            onClick={runCheckUpdate}
+            disabled={updateBusy}
+          >
+            {text.updateCheck}
+          </button>
+          <button
+            type="button"
+            className="d2-button d2-button--primary d2-button--sm"
+            onClick={runInstallUpdate}
+            disabled={updateBusy}
+          >
+            {text.updateInstall}
+          </button>
+        </div>
+        {updateMessage ? <p>{updateMessage}</p> : null}
       </section>
 
       {message ? <p>{message}</p> : null}
