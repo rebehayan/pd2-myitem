@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 import type { PostgrestError } from '@supabase/supabase-js'
+import { db } from './db'
 import { supabaseAdmin, supabaseConfigured } from './supabase'
+import { enqueueSyncOperation } from './sync-repository'
 
 export interface AppSettings {
   overlay_item_limit: number
@@ -19,6 +21,7 @@ export interface AppSettings {
 interface SettingRow {
   key: string
   value: string
+  updated_at?: string
 }
 
 const defaults: AppSettings = {
@@ -110,6 +113,9 @@ function normalizeSettings(raw: Partial<AppSettings>): AppSettings {
 }
 
 async function saveSettings(settings: AppSettings): Promise<void> {
+  saveSettingsToLocal(settings)
+  enqueueSyncOperation('setting', 'app', 'upsert')
+
   if (!supabaseConfigured || !supabaseAdmin) {
     memorySettings = settings
     return
@@ -138,10 +144,75 @@ async function saveSettings(settings: AppSettings): Promise<void> {
   raiseIfError(error, 'save settings')
 }
 
+function saveSettingsToLocal(settings: AppSettings): void {
+  const now = new Date().toISOString()
+  const rows = [
+    { key: 'overlay_item_limit', value: String(settings.overlay_item_limit), updated_at: now },
+    { key: 'overlay_opacity', value: String(settings.overlay_opacity), updated_at: now },
+    { key: 'overlay_minimal_mode', value: settings.overlay_minimal_mode ? 'true' : 'false', updated_at: now },
+    { key: 'overlay_title', value: settings.overlay_title, updated_at: now },
+    { key: 'overlay_title_enabled', value: settings.overlay_title_enabled ? 'true' : 'false', updated_at: now },
+    { key: 'overlay_title_size', value: String(settings.overlay_title_size), updated_at: now },
+    { key: 'overlay_title_color', value: settings.overlay_title_color, updated_at: now },
+    {
+      key: 'overlay_title_background_color',
+      value: settings.overlay_title_background_color,
+      updated_at: now,
+    },
+    { key: 'overlay_title_padding', value: String(settings.overlay_title_padding), updated_at: now },
+    { key: 'qr_public_enabled', value: settings.qr_public_enabled ? 'true' : 'false', updated_at: now },
+    { key: 'qr_token', value: settings.qr_token, updated_at: now },
+  ]
+
+  const statement = db.prepare(
+    `
+      INSERT INTO settings (key, value, updated_at)
+      VALUES (@key, @value, @updated_at)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = excluded.updated_at
+    `,
+  )
+  const tx = db.transaction((items: typeof rows) => {
+    for (const row of items) {
+      statement.run(row)
+    }
+  })
+  tx(rows)
+}
+
+function loadSettingsFromLocal(): AppSettings | null {
+  const rows = db.prepare<[], SettingRow>('SELECT key, value FROM settings').all()
+  if (rows.length === 0) {
+    return null
+  }
+
+  const map = new Map(rows.map((row) => [row.key, row.value]))
+  return normalizeSettings({
+    overlay_item_limit: parseNumber(map.get('overlay_item_limit') ?? '', defaults.overlay_item_limit),
+    overlay_opacity: parseNumber(map.get('overlay_opacity') ?? '', defaults.overlay_opacity),
+    overlay_minimal_mode: parseBoolean(map.get('overlay_minimal_mode') ?? '', defaults.overlay_minimal_mode),
+    overlay_title: map.get('overlay_title') ?? defaults.overlay_title,
+    overlay_title_enabled: parseBoolean(map.get('overlay_title_enabled') ?? '', defaults.overlay_title_enabled),
+    overlay_title_size: parseNumber(map.get('overlay_title_size') ?? '', defaults.overlay_title_size),
+    overlay_title_color: map.get('overlay_title_color') ?? defaults.overlay_title_color,
+    overlay_title_background_color: map.get('overlay_title_background_color') ?? defaults.overlay_title_background_color,
+    overlay_title_padding: parseNumber(map.get('overlay_title_padding') ?? '', defaults.overlay_title_padding),
+    qr_public_enabled: parseBoolean(map.get('qr_public_enabled') ?? '', defaults.qr_public_enabled),
+    qr_token: map.get('qr_token') ?? defaults.qr_token,
+  })
+}
+
 export async function getSettings(): Promise<AppSettings> {
   if (!supabaseConfigured || !supabaseAdmin) {
+    const local = loadSettingsFromLocal()
+    if (local) {
+      memorySettings = local
+      return local
+    }
     if (!memorySettings) {
       memorySettings = normalizeSettings(defaults)
+      saveSettingsToLocal(memorySettings)
     }
     return memorySettings
   }

@@ -19,6 +19,8 @@ import { ingestClipboardJson } from './ingestion'
 import { onItemCaptured } from './item-events'
 import { getSettings, updateSettings } from './settings-repository'
 import { supabaseAdmin, supabaseConfigured } from './supabase'
+import { getSyncStatus } from './sync-repository'
+import { isSyncPushRunning, runSyncPushBatch, startSyncPushLoop } from './sync-service'
 
 const app = express()
 const port = Number(process.env.API_PORT ?? 4310)
@@ -341,6 +343,21 @@ async function getTodayPublicPayload(): Promise<ApiTodayPublicPayload> {
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
+
+app.get('/api/sync/status', (_req, res) => {
+  res.json({
+    ...getSyncStatus(),
+    running: isSyncPushRunning(),
+  })
+})
+
+app.post(
+  '/api/sync/push',
+  asyncHandler(async (_req, res) => {
+    const result = await runSyncPushBatch()
+    res.json(result)
+  }),
+)
 
 app.get(
   '/api/items/recent',
@@ -701,15 +718,18 @@ app.post(
 
 const clipboardMonitorEnabled = process.env.ENABLE_CLIPBOARD_MONITOR !== 'false'
 const stopClipboardMonitor = clipboardMonitorEnabled ? startClipboardMonitor() : null
+const stopSyncPushLoop = startSyncPushLoop()
 
 const server = app.listen(port, host, () => {
   console.log(`[api] listening on http://${host}:${port}`)
   console.log(`[clipboard] monitor ${clipboardMonitorEnabled ? 'enabled' : 'disabled'}`)
   console.log(`[supabase] ${supabaseConfigured ? 'configured' : 'not configured (fallback mode)'}`)
   console.log(`[api] guest local api access ${allowGuestLocalApi ? 'enabled' : 'disabled'}`)
+  console.log('[sync] push loop enabled (15s interval)')
 })
 
 process.on('SIGINT', () => {
   stopClipboardMonitor?.()
+  stopSyncPushLoop()
   server.close(() => process.exit(0))
 })

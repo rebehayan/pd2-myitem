@@ -39,6 +39,9 @@ CREATE TABLE IF NOT EXISTS items (
   category TEXT NOT NULL DEFAULT 'misc',
   analysis_profile TEXT NOT NULL DEFAULT 'unknown',
   analysis_tags TEXT NOT NULL DEFAULT '[]',
+  sync_state TEXT NOT NULL DEFAULT 'pending',
+  last_sync_at TEXT,
+  sync_error TEXT,
   raw_json TEXT NOT NULL,
   fingerprint TEXT NOT NULL,
   FOREIGN KEY (session_id) REFERENCES sessions(id)
@@ -60,6 +63,17 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,
   updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sync_queue (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  operation TEXT NOT NULL,
+  attempt_count INTEGER NOT NULL DEFAULT 0,
+  next_retry_at TEXT,
+  last_error TEXT,
+  created_at TEXT NOT NULL
 );
 `)
 
@@ -122,6 +136,9 @@ CREATE TABLE IF NOT EXISTS items_new (
   category TEXT NOT NULL DEFAULT 'misc',
   analysis_profile TEXT NOT NULL DEFAULT 'unknown',
   analysis_tags TEXT NOT NULL DEFAULT '[]',
+  sync_state TEXT NOT NULL DEFAULT 'pending',
+  last_sync_at TEXT,
+  sync_error TEXT,
   raw_json TEXT NOT NULL,
   fingerprint TEXT NOT NULL,
   FOREIGN KEY (session_id) REFERENCES sessions(id)
@@ -129,7 +146,8 @@ CREATE TABLE IF NOT EXISTS items_new (
 
 INSERT INTO items_new (
   id, captured_at, session_id, name, base_type, quality, item_level, location,
-  defense, quantity, display_name, is_corrupted, icon_key, category, analysis_profile, analysis_tags, raw_json, fingerprint
+  defense, quantity, display_name, is_corrupted, icon_key, category, analysis_profile, analysis_tags,
+  sync_state, last_sync_at, sync_error, raw_json, fingerprint
 )
 SELECT
   id,
@@ -148,6 +166,9 @@ SELECT
   'misc' AS category,
   'unknown' AS analysis_profile,
   '[]' AS analysis_tags,
+  'pending' AS sync_state,
+  NULL AS last_sync_at,
+  NULL AS sync_error,
   raw_json,
   fingerprint
 FROM items;
@@ -180,6 +201,9 @@ CREATE TABLE IF NOT EXISTS items_final (
   category TEXT NOT NULL DEFAULT 'misc',
   analysis_profile TEXT NOT NULL DEFAULT 'unknown',
   analysis_tags TEXT NOT NULL DEFAULT '[]',
+  sync_state TEXT NOT NULL DEFAULT 'pending',
+  last_sync_at TEXT,
+  sync_error TEXT,
   raw_json TEXT NOT NULL,
   fingerprint TEXT NOT NULL,
   FOREIGN KEY (session_id) REFERENCES sessions(id)
@@ -187,7 +211,8 @@ CREATE TABLE IF NOT EXISTS items_final (
 
 INSERT INTO items_final (
   id, captured_at, session_id, name, base_type, quality, item_level, location,
-  defense, quantity, display_name, is_corrupted, icon_key, category, analysis_profile, analysis_tags, raw_json, fingerprint
+  defense, quantity, display_name, is_corrupted, icon_key, category, analysis_profile, analysis_tags,
+  sync_state, last_sync_at, sync_error, raw_json, fingerprint
 )
 SELECT
   id,
@@ -206,6 +231,9 @@ SELECT
   category,
   analysis_profile,
   analysis_tags,
+  COALESCE(sync_state, 'pending') AS sync_state,
+  last_sync_at,
+  sync_error,
   raw_json,
   fingerprint
 FROM items;
@@ -234,6 +262,18 @@ if (hasColumn('items', 'i_level')) {
 }
 
 db.exec('UPDATE items SET item_level = COALESCE(item_level, 0)')
+
+if (!hasColumn('items', 'sync_state')) {
+  db.exec("ALTER TABLE items ADD COLUMN sync_state TEXT NOT NULL DEFAULT 'pending'")
+}
+
+if (!hasColumn('items', 'last_sync_at')) {
+  db.exec('ALTER TABLE items ADD COLUMN last_sync_at TEXT')
+}
+
+if (!hasColumn('items', 'sync_error')) {
+  db.exec('ALTER TABLE items ADD COLUMN sync_error TEXT')
+}
 
 if (hasColumn('items', 'i_level')) {
   rebuildItemsTableToFinalSchema()
@@ -289,4 +329,7 @@ db.exec(`
 CREATE INDEX IF NOT EXISTS idx_items_captured_at ON items(captured_at DESC);
 CREATE INDEX IF NOT EXISTS idx_items_session_id ON items(session_id);
 CREATE INDEX IF NOT EXISTS idx_items_fingerprint_captured ON items(fingerprint, captured_at DESC);
+CREATE INDEX IF NOT EXISTS idx_items_sync_state ON items(sync_state, captured_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity_type, entity_id, operation);
+CREATE INDEX IF NOT EXISTS idx_sync_queue_retry ON sync_queue(next_retry_at, attempt_count);
 `)
