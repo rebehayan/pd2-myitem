@@ -215,3 +215,17 @@ Git 반영 결과:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
   를 설정 후 재배포 필요.
+
+2026-03-13 GitHub 반영 내역
+
+반영 완료:
+- 원격: `origin/main`
+- 푸시 범위: `4dd45ec..567430b`
+- 포함 커밋:
+  - `7d6d394` chore: remove numbered duplicate icon assets
+  - `567430b` feat: map thumbnails by icon folder intent
+
+푸시에 제외한 로컬 변경(의도적으로 미포함):
+- 수정 파일: `app/index.html`, `app/src/App.css`, `app/src/App.tsx`, `app/src/pages/GuidePage.tsx`, `app/src/pages/LoginPage.tsx`
+- 신규 파일: `app/.env`, `app/src/pages/NotFoundPage.tsx`, `app/src/pages/ResetPasswordPage.tsx`
+- 신규 아이콘 다수: `app/public/icons/non-weapons/*.webp`

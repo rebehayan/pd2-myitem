@@ -244,6 +244,7 @@ interface ApiOverlayPayload {
   title_color?: string
   title_background_color?: string
   title_padding?: number
+  overlay_item_limit?: number
   overlay_minimal_mode?: boolean
   items: ApiItemSummary[]
 }
@@ -255,14 +256,16 @@ export async function fetchOverlayItems(): Promise<{
   titleColor?: string
   titleBackgroundColor?: string
   titlePadding?: number
+  itemLimit?: number
   minimalMode?: boolean
   items: ItemSummary[]
 }> {
   if (await shouldUseLocal()) {
     const settings = readLocalSettings(defaultAppSettings)
     const limit = settings.overlay_item_limit ?? defaultAppSettings.overlay_item_limit
+    const fetchCount = Math.max(limit * 5, 20)
     const items = sortByCapturedAtDesc(readLocalItems())
-      .slice(0, limit)
+      .slice(0, fetchCount)
       .map((item) => {
         const summary = toLocalItemSummary(item)
         const derivedKeyStats = item.stats ? item.stats.slice(0, 3).map(formatKeyStat) : []
@@ -279,6 +282,7 @@ export async function fetchOverlayItems(): Promise<{
       titleColor: settings.overlay_title_color,
       titleBackgroundColor: settings.overlay_title_background_color,
       titlePadding: settings.overlay_title_padding,
+      itemLimit: limit,
       minimalMode: settings.overlay_minimal_mode,
       items,
     }
@@ -310,6 +314,7 @@ export async function fetchOverlayItems(): Promise<{
       titleColor: fallbackTitleColor,
       titleBackgroundColor: fallbackTitleBackgroundColor,
       titlePadding: fallbackTitlePadding,
+      itemLimit: defaultAppSettings.overlay_item_limit,
       minimalMode: undefined,
       items: payload.map(toItemSummary),
     }
@@ -324,6 +329,7 @@ export async function fetchOverlayItems(): Promise<{
     titleBackgroundColor:
       typeof overlayPayload.title_background_color === 'string' ? overlayPayload.title_background_color : undefined,
     titlePadding: typeof overlayPayload.title_padding === 'number' ? overlayPayload.title_padding : undefined,
+    itemLimit: typeof overlayPayload.overlay_item_limit === 'number' ? overlayPayload.overlay_item_limit : undefined,
     minimalMode: typeof overlayPayload.overlay_minimal_mode === 'boolean' ? overlayPayload.overlay_minimal_mode : undefined,
     items: items.map(toItemSummary),
   }

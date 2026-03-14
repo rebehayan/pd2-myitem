@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-type MatchedBy = 'unique' | 'type' | 'family' | 'category' | 'generic'
+type MatchedBy = 'unique' | 'set' | 'type' | 'name' | 'family' | 'category' | 'generic'
 type QualityFrame = 'normal' | 'magic' | 'rare' | 'set' | 'unique'
 
 type FamilyMapEntry = {
@@ -52,13 +52,13 @@ const categoryPreferredFolders: Record<string, string[]> = {
 }
 
 const defaultCategoryMap: Record<string, string> = {
-  boots: 'generic/item_unknown.svg',
+  boots: 'non-weapons/Boots.webp',
   weapon: 'weapons/Crystal_Sword.webp',
-  armor: 'generic/item_unknown.svg',
-  helm: 'generic/item_unknown.svg',
-  shield: 'generic/item_unknown.svg',
-  gloves: 'generic/item_unknown.svg',
-  belt: 'generic/item_unknown.svg',
+  armor: 'non-weapons/Quilted_Armor.webp',
+  helm: 'non-weapons/Great_Helm.webp',
+  shield: 'non-weapons/Aerin_Shield.webp',
+  gloves: 'non-weapons/Gauntlets.webp',
+  belt: 'non-weapons/Belt.webp',
   jewelry: 'rings/Ring_1.webp',
   charm: 'charms_jewels/Grand_Charm_2.webp',
   material: 'maps/Worldstone_Shard.webp',
@@ -243,7 +243,26 @@ function iconAssetExists(relativePath: string): boolean {
   return getIconPathSet().has(relativePath.toLowerCase())
 }
 
-function resolveIconAssetPath(relativePath: string): string {
+function pickIconByPreferredFolders(matches: string[], preferredFolders: string[]): string | null {
+  if (matches.length === 0) {
+    return null
+  }
+  if (preferredFolders.length === 0) {
+    return matches[0] ?? null
+  }
+
+  const normalizedFolders = preferredFolders.map((folder) => folder.toLowerCase())
+  for (const folder of normalizedFolders) {
+    const inFolder = matches.find((match) => match.toLowerCase().startsWith(`${folder}/`))
+    if (inFolder) {
+      return inFolder
+    }
+  }
+
+  return matches[0] ?? null
+}
+
+function resolveIconAssetPath(relativePath: string, preferredFolders: string[] = []): string {
   const normalizedRaw = toPosixPath(relativePath).trim().replace(/^\/+/, '').replace(/^icons\//i, '')
   const safeParts = normalizedRaw.split('/').filter((part) => part.length > 0)
   if (safeParts.some((part) => part === '.' || part === '..')) {
@@ -260,13 +279,13 @@ function resolveIconAssetPath(relativePath: string): string {
   }
 
   const fileName = path.basename(normalized).toLowerCase()
-  const fileNameMatch = buildIconPathByFileName()[fileName]?.[0]
+  const fileNameMatch = pickIconByPreferredFolders(buildIconPathByFileName()[fileName] ?? [], preferredFolders)
   if (fileNameMatch) {
     return fileNameMatch
   }
 
   const stem = path.parse(fileName).name.toLowerCase()
-  const stemMatch = buildIconPathByStem()[stem]?.[0]
+  const stemMatch = pickIconByPreferredFolders(buildIconPathByStem()[stem] ?? [], preferredFolders)
   if (stemMatch) {
     return stemMatch
   }
@@ -404,6 +423,47 @@ function getUniqueImageMap(): Record<string, string> {
   }
   cachedUniqueMap = normalizeUniqueMap(readMapFromJson('unique-image-map.json') ?? defaultUniqueMap)
   return cachedUniqueMap
+}
+
+function resolveFirstExistingIconAsset(candidates: string[]): string | null {
+  for (const candidate of candidates) {
+    if (iconAssetExists(candidate)) {
+      return candidate
+    }
+  }
+  return null
+}
+
+function resolveKnownUniqueIcon(normalizedUniqueName: string): string | null {
+  if (!normalizedUniqueName) {
+    return null
+  }
+  if (normalizedUniqueName.includes('annihilus')) {
+    return 'charms_jewels/Annihilus.webp'
+  }
+  if (normalizedUniqueName.includes('hellfire_torch')) {
+    return 'charms_jewels/Hellfire_Torch.webp'
+  }
+
+  if (normalizedUniqueName.includes('griffon')) {
+    return resolveFirstExistingIconAsset(['non-weapons/Griffon\'s_Eye.webp', 'non-weapons/Circlet.webp'])
+  }
+
+  if (normalizedUniqueName.includes('alma_negra') || normalizedUniqueName === 'alma') {
+    return resolveFirstExistingIconAsset(['non-weapons/Alma_Negra.webp', 'non-weapons/Rondache.webp'])
+  }
+
+  if (normalizedUniqueName.includes('arkaine') || normalizedUniqueName.includes('valor')) {
+    return resolveFirstExistingIconAsset([
+      "non-weapons/Arkaine's_Valor.webp",
+      'non-weapons/Arkaines_Valor.webp',
+      'non-weapons/Arkaine_Valor.webp',
+      'non-weapons/ArkaineValor.webp',
+      'non-weapons/Balrog_Skin.webp',
+    ])
+  }
+
+  return null
 }
 
 function buildFamilyByType(): Record<string, FamilyMapEntry> {
@@ -558,8 +618,8 @@ function getFamilyRepresentativeName(entry: FamilyMapEntry): string | null {
 const categoryKeywordRules: Array<{ category: string; keywords: string[] }> = [
   { category: 'boots', keywords: ['boots', 'greaves'] },
   { category: 'gloves', keywords: ['gloves', 'gauntlets'] },
-  { category: 'helm', keywords: ['helm', 'crown', 'mask', 'circlet'] },
-  { category: 'shield', keywords: ['shield', 'aegis'] },
+  { category: 'helm', keywords: ['helm', 'helmet', 'crown', 'mask', 'circlet', '헬멧'] },
+  { category: 'shield', keywords: ['shield', 'aegis', '방패'] },
   { category: 'belt', keywords: ['belt', 'sash'] },
   { category: 'jewelry', keywords: ['ring', '반지', 'amulet', 'necklace', '목걸이'] },
   { category: 'charm', keywords: ['charm'] },
@@ -600,12 +660,66 @@ export function normalizeTypeKey(baseType: string): string {
     .replaceAll(/^_+|_+$/g, '')
 }
 
-export function inferCategory(baseType: string): string {
+function inferCategoryFromFamily(baseType: string): string | null {
+  const normalizedType = normalizeTypeKey(baseType)
+  const familyEntry = buildFamilyByType()[normalizedType]
+  if (!familyEntry) {
+    return null
+  }
+
+  const subtype = familyEntry.subtype.trim().toLowerCase()
+  if (subtype.includes('helm')) {
+    return 'helm'
+  }
+  if (subtype.includes('shield') || subtype.includes('shrunken_head') || subtype.includes('voodoo_head')) {
+    return 'shield'
+  }
+  if (subtype.includes('gloves')) {
+    return 'gloves'
+  }
+  if (subtype.includes('boots')) {
+    return 'boots'
+  }
+  if (subtype.includes('belt')) {
+    return 'belt'
+  }
+  if (familyEntry.category.trim().toLowerCase() === 'weapon') {
+    return 'weapon'
+  }
+  if (familyEntry.category.trim().toLowerCase() === 'armor') {
+    return 'armor'
+  }
+
+  return null
+}
+
+export function inferCategory(baseType: string, itemName?: string | null): string {
+  const byFamily = inferCategoryFromFamily(baseType)
+  if (byFamily) {
+    return byFamily
+  }
+
+  if (itemName) {
+    const byFamilyName = inferCategoryFromFamily(itemName)
+    if (byFamilyName) {
+      return byFamilyName
+    }
+  }
+
   const normalizedType = normalizeTypeKey(baseType)
 
   for (const rule of categoryKeywordRules) {
     if (rule.keywords.some((keyword) => normalizedType.includes(keyword))) {
       return rule.category
+    }
+  }
+
+  if (itemName) {
+    const normalizedName = normalizeTypeKey(itemName)
+    for (const rule of categoryKeywordRules) {
+      if (rule.keywords.some((keyword) => normalizedName.includes(keyword))) {
+        return rule.category
+      }
     }
   }
 
@@ -633,14 +747,14 @@ export function resolveThumbnail(args: {
 }): ThumbnailResolveResult {
   const normalizedType = normalizeTypeKey(args.baseType)
   const runeKey = resolveRuneKeyFromText(args.baseType) ?? (args.itemName ? resolveRuneKeyFromText(args.itemName) : null)
-  const category = runeKey ? 'rune' : inferCategory(args.baseType)
+  const category = runeKey ? 'rune' : inferCategory(args.baseType, args.itemName)
   const preferredFolders = getPreferredIconFolders({ baseType: args.baseType, itemName: args.itemName, category })
   const qualityFrame = toQualityFrame(args.quality)
   const normalizedUniqueName = args.itemName ? normalizeUniqueNameKey(args.itemName) : ''
 
   if (runeKey) {
-    return {
-      iconPath: resolveIconAssetPath(formatRuneFileName(runeKey)),
+      return {
+        iconPath: resolveIconAssetPath(formatRuneFileName(runeKey), ['rune']),
       iconKey: normalizedType,
       category,
       matchedBy: 'type',
@@ -656,7 +770,21 @@ export function resolveThumbnail(args: {
     const uniqueImage = getUniqueImageMap()[normalizedUniqueName]
     if (uniqueImage) {
       return {
-        iconPath: resolveIconAssetPath(uniqueImage),
+        iconPath: resolveIconAssetPath(uniqueImage, preferredFolders),
+        iconKey: normalizedType,
+        category,
+        matchedBy: 'unique',
+        qualityFrame,
+        badges: {
+          corrupted: args.isCorrupted,
+          quantity: args.quantity !== null,
+        },
+      }
+    }
+    const knownUniqueIcon = resolveKnownUniqueIcon(normalizedUniqueName)
+    if (knownUniqueIcon) {
+      return {
+        iconPath: resolveIconAssetPath(knownUniqueIcon, preferredFolders),
         iconKey: normalizedType,
         category,
         matchedBy: 'unique',
@@ -669,6 +797,23 @@ export function resolveThumbnail(args: {
     }
     if (shouldLogIconMiss) {
       console.log(`[unique-image-miss] name="${args.itemName}"`)
+    }
+  }
+
+  if (qualityFrame === 'set' && args.itemName) {
+    const setIcon = resolveIconByStemCandidates([args.itemName], preferredFolders)
+    if (setIcon) {
+      return {
+        iconPath: setIcon,
+        iconKey: normalizedType,
+        category,
+        matchedBy: 'set',
+        qualityFrame,
+        badges: {
+          corrupted: args.isCorrupted,
+          quantity: args.quantity !== null,
+        },
+      }
     }
   }
 
@@ -711,16 +856,38 @@ export function resolveThumbnail(args: {
   const exact = getExactTypeMap()[normalizedType]
 
   if (exact) {
-    return {
-      iconPath: resolveIconAssetPath(exact),
-      iconKey: normalizedType,
-      category,
-      matchedBy: 'type',
-      qualityFrame,
-      badges: {
-        corrupted: args.isCorrupted,
-        quantity: args.quantity !== null,
-      },
+    const exactPath = resolveIconAssetPath(exact, preferredFolders)
+    if (exactPath === 'generic/item_unknown.svg') {
+      // Continue to name/category fallback when exact mapping is effectively unknown.
+    } else {
+      return {
+        iconPath: exactPath,
+        iconKey: normalizedType,
+        category,
+        matchedBy: 'type',
+        qualityFrame,
+        badges: {
+          corrupted: args.isCorrupted,
+          quantity: args.quantity !== null,
+        },
+      }
+    }
+  }
+
+  if (args.itemName) {
+    const byName = resolveIconByStemCandidates([args.itemName], preferredFolders)
+    if (byName) {
+      return {
+        iconPath: byName,
+        iconKey: normalizedType,
+        category,
+        matchedBy: 'name',
+        qualityFrame,
+        badges: {
+          corrupted: args.isCorrupted,
+          quantity: args.quantity !== null,
+        },
+      }
     }
   }
 
@@ -730,7 +897,7 @@ export function resolveThumbnail(args: {
       console.log(`[icon-miss] type="${args.baseType}" category="${category}"`)
     }
     return {
-      iconPath: resolveIconAssetPath(byCategory),
+      iconPath: resolveIconAssetPath(byCategory, preferredFolders),
       iconKey: normalizedType,
       category,
       matchedBy: 'category',

@@ -384,7 +384,9 @@ app.get(
   '/api/overlay',
   asyncHandler(async (req, res) => {
     const settings = await getSettings()
-    const items = (await getOverlayItems(settings.overlay_item_limit)).map(toApiItemSummary)
+    const overlayItemLimit = settings.overlay_item_limit
+    const fetchCount = Math.max(overlayItemLimit * 5, 20)
+    const items = (await getOverlayItems(fetchCount)).map(toApiItemSummary)
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
     res.setHeader('Pragma', 'no-cache')
@@ -407,6 +409,7 @@ app.get(
       title_color: settings.overlay_title_color,
       title_background_color: settings.overlay_title_background_color,
       title_padding: settings.overlay_title_padding,
+      overlay_item_limit: overlayItemLimit,
       overlay_minimal_mode: settings.overlay_minimal_mode,
       items,
     })
