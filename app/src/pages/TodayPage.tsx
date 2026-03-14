@@ -7,6 +7,7 @@ import type { ItemSummary } from '../lib/types'
 import type { TodayPublicItem, TodayStats } from '../lib/types'
 import { useItemCaptureRefresh } from '../lib/use-item-capture-refresh'
 import { resolveItemTheme } from '../theme/resolveItemTheme'
+import { withBasePathOptional } from '../lib/asset-path'
 
 interface TodayCardItem {
   id?: string
@@ -462,8 +463,8 @@ export function TodayPage() {
             ))}
           </div>
           <div className="today-calendar__grid">
-            {Array.from({ length: firstDay }).map((_, index) => (
-              <div key={`empty-${index}`} className="today-calendar__empty" />
+            {Array.from({ length: firstDay }, (_, offset) => `${calendarMonth}-empty-${offset + 1}`).map((key) => (
+              <div key={key} className="today-calendar__empty" />
             ))}
             {days.map((day) => {
               const dateKey = `${calendarMonth}-${String(day).padStart(2, '0')}`
@@ -567,7 +568,7 @@ export function TodayPage() {
       {error ? <p>{error}</p> : null}
 
       <section className="today-grid" aria-label="Today items grid">
-        {filteredItems.map((item, index) => {
+        {filteredItems.map((item) => {
           const theme = resolveItemTheme({
             displayName: item.displayName,
             type: item.category ?? '',
@@ -579,10 +580,11 @@ export function TodayPage() {
             analysisTags: item.analysisTags,
           })
           const visualState = getItemVisualState({ analysisTags: item.analysisTags })
+          const itemKey = item.id ?? `${item.displayName}-${item.capturedAt}-${item.quality}-${item.quantity ?? '1'}`
 
           return (
             <article
-              key={`${item.displayName}-${item.capturedAt}-${index}`}
+              key={itemKey}
               className={isSharedView ? 'today-item-card today-item-card--shared' : 'd2-panel today-item-card item-themed'}
               style={isSharedView ? undefined : theme.style}
             >
@@ -598,7 +600,7 @@ export function TodayPage() {
               ) : null}
               {item.thumbnail ? (
                 <img
-                  src={item.thumbnail}
+                  src={withBasePathOptional(item.thumbnail) ?? ''}
                   alt={item.displayName}
                   className={`today-item-card__thumb${visualState.isEthereal ? ' is-ethereal' : ''}`}
                 />

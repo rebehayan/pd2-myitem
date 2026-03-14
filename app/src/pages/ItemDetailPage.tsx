@@ -6,6 +6,7 @@ import { useUiLanguage } from '../lib/ui-language-context'
 import type { ItemDetail } from '../lib/types'
 import { getStatToneClass } from '../lib/item-stat-tone'
 import { resolveItemTheme } from '../theme/resolveItemTheme'
+import { withBasePathOptional } from '../lib/asset-path'
 
 export function ItemDetailPage() {
   const { language } = useUiLanguage()
@@ -138,7 +139,7 @@ export function ItemDetailPage() {
       {item.thumbnail ? (
         <img
           className={`item-thumbnail${visualState.isEthereal ? ' is-ethereal' : ''}`}
-          src={item.thumbnail}
+          src={withBasePathOptional(item.thumbnail) ?? ''}
           alt={item.displayName}
         />
       ) : null}
@@ -156,8 +157,11 @@ export function ItemDetailPage() {
       <div className="d2-panel">
         <h3>{text.stats}</h3>
         {item.stats.length === 0 ? <p>{text.noStats}</p> : null}
-        {item.stats.map((stat, index) => (
-          <p key={`${stat.statName}-${index}`} className={`item-theme-stat${stat.isCorrupted ? ' is-corrupted' : ''}`}>
+        {item.stats.map((stat) => (
+          <p
+            key={`${stat.statName}-${stat.statValue ?? 'null'}-${stat.rangeMin ?? 'null'}-${stat.rangeMax ?? 'null'}`}
+            className={`item-theme-stat${stat.isCorrupted ? ' is-corrupted' : ''}`}
+          >
             {stat.statValue === null ? (
               <span className={`item-theme-stat-label${getStatToneClass(stat.statName)}`}>
                 {stat.statName}

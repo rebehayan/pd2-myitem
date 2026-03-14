@@ -12,6 +12,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TodayPage } from './pages/TodayPage'
 import { useAuth } from './lib/auth-context'
+import { withBasePath } from './lib/asset-path'
 import { useUiLanguage } from './lib/ui-language-context'
 
 function App() {
@@ -114,7 +115,7 @@ function App() {
         <NavLink to="/" end>
           {text.dashboard}
         </NavLink>
-        <a href="/overlay" target="_blank" rel="noreferrer">
+        <a href={withBasePath('overlay')} target="_blank" rel="noreferrer">
           {text.overlay}
         </a>
         <NavLink to="/today">{text.today}</NavLink>

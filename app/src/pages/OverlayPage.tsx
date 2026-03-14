@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiError, fetchOverlayItems, fetchSettings } from '../lib/api'
+import { withBasePath } from '../lib/asset-path'
 import { getItemVisualState } from '../lib/item-visual-state'
 import { useUiLanguage } from '../lib/ui-language-context'
 import type { ItemSummary } from '../lib/types'
@@ -27,7 +28,7 @@ function qualityClass(quality: string): string {
 }
 
 function OverlayThumb({ item }: { item: ItemSummary }) {
-  const src = item.thumbnail ?? '/icons/generic/item_unknown.svg'
+  const src = withBasePath(item.thumbnail ?? 'icons/generic/item_unknown.svg')
   const visualState = getItemVisualState({ analysisTags: item.analysisTags })
 
   return (
@@ -38,7 +39,7 @@ function OverlayThumb({ item }: { item: ItemSummary }) {
       loading="lazy"
       onError={(event) => {
         event.currentTarget.onerror = null
-        event.currentTarget.src = '/icons/generic/item_unknown.svg'
+        event.currentTarget.src = withBasePath('icons/generic/item_unknown.svg')
       }}
     />
   )
@@ -141,10 +142,13 @@ export function OverlayPage() {
   const [titleColor, setTitleColor] = useState('#f7e6a8')
   const [titleBackgroundColor, setTitleBackgroundColor] = useState('#1c1a1a')
   const [titlePadding, setTitlePadding] = useState(0)
+  const [itemLimit, setItemLimit] = useState(10)
   const [minimalMode, setMinimalMode] = useState(false)
+  const [carouselPage, setCarouselPage] = useState(0)
   const loadingRef = useRef(false)
   const mountedRef = useRef(true)
   const lastAppliedModeLogRef = useRef<string>('')
+  const newestItemIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     document.body.classList.add('overlay-mode')
@@ -205,6 +209,7 @@ export function OverlayPage() {
       let overlayTitleColor = latest.titleColor ?? titleDefaults.color
       let overlayTitleBackgroundColor = latest.titleBackgroundColor ?? titleDefaults.backgroundColor
       let overlayTitlePadding = latest.titlePadding ?? titleDefaults.padding
+      let overlayItemLimit = latest.itemLimit ?? itemLimit
       let overlayMinimalMode = latest.minimalMode ?? false
       let minimalModeSource: 'api-overlay' | 'settings' | 'local-override' = typeof latest.minimalMode === 'boolean'
         ? 'api-overlay'
@@ -217,6 +222,7 @@ export function OverlayPage() {
         overlayTitleColor = settings.overlay_title_color ?? overlayTitleColor
         overlayTitleBackgroundColor = settings.overlay_title_background_color ?? overlayTitleBackgroundColor
         overlayTitlePadding = settings.overlay_title_padding ?? overlayTitlePadding
+        overlayItemLimit = settings.overlay_item_limit ?? overlayItemLimit
         overlayMinimalMode = settings.overlay_minimal_mode ?? overlayMinimalMode
         minimalModeSource = 'settings'
       } catch {
@@ -238,13 +244,14 @@ export function OverlayPage() {
         }
       }
 
-      const appliedLogKey = `${overlayMinimalMode}:${minimalModeSource}:${latest.items.length}`
+      const appliedLogKey = `${overlayMinimalMode}:${minimalModeSource}:${latest.items.length}:${overlayItemLimit}`
       if (lastAppliedModeLogRef.current !== appliedLogKey) {
         lastAppliedModeLogRef.current = appliedLogKey
         console.info('[overlay] applied minimal mode', {
           minimalMode: overlayMinimalMode,
           source: minimalModeSource,
           itemCount: latest.items.length,
+          itemLimit: overlayItemLimit,
           timestamp: new Date().toISOString(),
         })
       }
@@ -255,6 +262,7 @@ export function OverlayPage() {
       setTitleColor(overlayTitleColor)
       setTitleBackgroundColor(overlayTitleBackgroundColor)
       setTitlePadding(overlayTitlePadding)
+      setItemLimit(Math.max(1, overlayItemLimit))
       setMinimalMode(overlayMinimalMode)
 
       setLoadError(null)
@@ -285,6 +293,11 @@ export function OverlayPage() {
 
         return latest.items
       })
+      const newestId = latest.items[0]?.id ?? null
+      if (newestId !== newestItemIdRef.current) {
+        newestItemIdRef.current = newestId
+        setCarouselPage(0)
+      }
     } catch (error: unknown) {
       if (!mountedRef.current) {
         return
@@ -304,7 +317,7 @@ export function OverlayPage() {
     } finally {
       loadingRef.current = false
     }
-  }, [text.denied, text.notFound, text.requestFail, text.unavailable])
+  }, [itemLimit, text.denied, text.notFound, text.requestFail, text.unavailable])
 
   useEffect(() => {
     mountedRef.current = true
@@ -326,7 +339,34 @@ export function OverlayPage() {
 
   useItemCaptureRefresh(loadItems, { enabled: true })
 
-  const empty = useMemo(() => items.length === 0, [items])
+  const safeItemLimit = Math.max(1, itemLimit)
+
+  useEffect(() => {
+    if (items.length <= safeItemLimit) {
+      return
+    }
+
+    const intervalId = window.setInterval(() => {
+      setCarouselPage((prev) => prev + 1)
+    }, 3500)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [items.length, safeItemLimit])
+
+  const visibleItems = useMemo(() => {
+    if (items.length <= safeItemLimit) {
+      return items
+    }
+
+    const maxPage = Math.ceil(items.length / safeItemLimit)
+    const normalizedPage = ((carouselPage % maxPage) + maxPage) % maxPage
+    const start = normalizedPage * safeItemLimit
+    return items.slice(start, start + safeItemLimit)
+  }, [carouselPage, items, safeItemLimit])
+
+  const empty = useMemo(() => visibleItems.length === 0, [visibleItems])
 
   return (
     <section className="overlay-shell d2-ui" aria-label="OBS Overlay">
@@ -347,7 +387,7 @@ export function OverlayPage() {
         </div>
       ) : null}
       <div className="overlay-list d2-ui">
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const theme = resolveItemTheme({
             displayName: item.displayName,
             type: item.type,

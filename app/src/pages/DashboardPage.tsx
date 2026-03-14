@@ -9,6 +9,7 @@ import { useAuth } from '../lib/auth-context'
 import { useUiLanguage } from '../lib/ui-language-context'
 import { useItemCaptureRefresh } from '../lib/use-item-capture-refresh'
 import { resolveItemTheme } from '../theme/resolveItemTheme'
+import { withBasePathOptional } from '../lib/asset-path'
 
 function statInline(stat: ItemDetail['stats'][number]): string {
   if (stat.statValue === null) {
@@ -590,7 +591,7 @@ export function DashboardPage() {
                 {item.thumbnail ? (
                   <img
                     className={`dashboard-row__thumb${visualState.isEthereal ? ' is-ethereal' : ''}`}
-                    src={item.thumbnail}
+                    src={withBasePathOptional(item.thumbnail) ?? ''}
                     alt={item.displayName}
                   />
                 ) : null}
@@ -624,7 +625,7 @@ export function DashboardPage() {
               {selectedItem.thumbnail ? (
                 <img
                   className={`item-thumbnail${selectedVisualState.isEthereal ? ' is-ethereal' : ''}`}
-                  src={selectedItem.thumbnail}
+                  src={withBasePathOptional(selectedItem.thumbnail) ?? ''}
                   alt={selectedItem.displayName}
                 />
               ) : null}
@@ -651,8 +652,11 @@ export function DashboardPage() {
                <div className="d2-panel">
                  <h4>{text.stats}</h4>
                  {selectedItem.stats.length === 0 ? <p>{text.noStats}</p> : null}
-                {selectedItem.stats.map((stat, idx) => (
-                  <p key={`${stat.statName}-${idx}`} className={`item-theme-stat${stat.isCorrupted ? ' is-corrupted' : ''}`}>
+                {selectedItem.stats.map((stat) => (
+                  <p
+                    key={`${stat.statName}-${stat.statValue ?? 'null'}-${stat.rangeMin ?? 'null'}-${stat.rangeMax ?? 'null'}`}
+                    className={`item-theme-stat${stat.isCorrupted ? ' is-corrupted' : ''}`}
+                  >
                     {stat.statValue === null ? (
                       <span className={`item-theme-stat-label${getStatToneClass(stat.statName)}`}>
                         {stat.statName}
