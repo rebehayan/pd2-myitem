@@ -446,6 +446,9 @@ fn resolve_thumbnail(item_name: &str, item_type: &str, quality: &str, category: 
     if normalized.contains("charm") {
         return "/icons/charms_jewels/Grand_Charm_2.webp".to_string();
     }
+    if normalized.contains("decapitator") {
+        return "/icons/weapons/War_Axe.webp".to_string();
+    }
 
     if let Some(mapped) = category_icon_map().get(category) {
         if mapped.starts_with("icons/") {
