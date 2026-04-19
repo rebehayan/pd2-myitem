@@ -295,7 +295,7 @@ async function toItemDetail(rawPayload: unknown): Promise<ItemDetail | null> {
 }
 
 function isDuplicate(items: ItemDetail[], fingerprint: string, nowMs: number): boolean {
-  const threshold = nowMs - 3000
+  const threshold = nowMs - 5000
   return items.some((entry) => {
     const hasFingerprint = entry.analysisTags?.includes(`fingerprint:${fingerprint}`)
     if (!hasFingerprint) {
