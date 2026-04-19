@@ -28,7 +28,12 @@
     "targets": ["nsis"],
     "icon": ["../public/diablo.ico"],
     "resources": ["../public/icons"],
-    "publisher": "Rebehayan"
+    "publisher": "Rebehayan",
+    "windows": {
+      "nsis": {
+        "installerIcon": "../public/diablo.ico"
+      }
+    }
   },
   "plugins": {
     "updater": {
