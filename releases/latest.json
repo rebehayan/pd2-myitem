@@ -4,8 +4,8 @@
   "appUpdate": false,
   "dataUpdate": false,
   "releaseUrl": "https://github.com/rebehayan/pd2-myitem/releases/latest",
-  "downloadExe": "https://github.com/rebehayan/pd2-myitem/releases/latest/download/PD2_Broadcast_Item_Tracker_0.1.2_portable.exe",
-  "downloadInstaller": "https://github.com/rebehayan/pd2-myitem/releases/latest/download/PD2%20Broadcast%20Item%20Tracker_0.1.2_x64-setup.exe",
+  "downloadExe": "./PD2_Broadcast_Item_Tracker_0.1.2_portable.exe",
+  "downloadInstaller": "./PD2%20Broadcast%20Item%20Tracker_0.1.2_x64-setup.exe",
   "date": "2026-04-19",
   "data": {
     "icons": true,

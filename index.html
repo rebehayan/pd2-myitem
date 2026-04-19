@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PD2 Broadcast Item Tracker</title>
+  <link rel="icon" href="app/public/diablo.ico">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo h1 {
+      color: #e94560;
+      font-size: 2.5rem;
+      text-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+    }
+    .logo p {
+      color: #a0a0a0;
+      margin-top: 10px;
+    }
+    .download-section {
+      margin-top: 30px;
+    }
+    .download-section h2 {
+      color: #fff;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      width: 100%;
+      padding: 20px 30px;
+      margin-bottom: 15px;
+      background: linear-gradient(135deg, #e94560 0%, #c73e54 100%);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    .download-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+    }
+    .download-btn.secondary {
+      background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+    }
+    .download-btn.secondary:hover {
+      box-shadow: 0 10px 30px rgba(15, 52, 96, 0.4);
+    }
+    .download-btn span {
+      font-size: 2rem;
+    }
+    .version {
+      text-align: center;
+      color: #666;
+      margin-top: 30px;
+      font-size: 0.9rem;
+    }
+    .features {
+      margin-top: 40px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .features h3 {
+      color: #fff;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .features ul {
+      list-style: none;
+      color: #ccc;
+    }
+    .features li {
+      padding: 8px 0;
+      padding-left: 25px;
+      position: relative;
+    }
+    .features li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #e94560;
+    }
+    .lang-switch {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+    .lang-switch button {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .lang-switch button:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="lang-switch">
+    <button onclick="toggleLang()">EN / 한국어</button>
+  </div>
+  
+  <div class="container">
+    <div class="logo">
+      <h1>PD2 Item Tracker</h1>
+      <p class="ko">디아블로2 아이템 캡처 및 관리 도구</p>
+      <p class="en hidden">Diablo 2 item capture and management tool</p>
+    </div>
+
+    <div class="download-section">
+      <h2 class="ko">다운로드</h2>
+      <h2 class="en hidden">Download</h2>
+      
+      <a href="PD2_Broadcast_Item_Tracker_0.1.2_portable.exe" class="download-btn" download>
+        <span>📦</span>
+        <div>
+          <div class="ko">포터블 버전 (Portable)</div>
+          <div class="en hidden">Portable Version</div>
+          <div style="font-size: 0.8rem; font-weight: normal; opacity: 0.8;">Portable - No install needed</div>
+        </div>
+      </a>
+      
+      <a href="PD2%20Broadcast%20Item%20Tracker_0.1.2_x64-setup.exe" class="download-btn secondary" download>
+        <span>⚙️</span>
+        <div>
+          <div class="ko">설치 프로그램 (Installer)</div>
+          <div class="en hidden">Installer</div>
+          <div style="font-size: 0.8rem; font-weight: normal; opacity: 0.8;">Setup - Full installation</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="version">v0.1.2</div>
+
+    <div class="features">
+      <h3 class="ko">주요 기능</h3>
+      <h3 class="en hidden">Features</h3>
+      <ul>
+        <li class="ko">클립보드 자동 캡처 - 게임에서 아이템 복사시 자동 인식</li>
+        <li class="en hidden">Auto clipboard capture - automatically detects copied items in-game</li>
+        <li class="ko">로컬 저장 - 외부 서버 없이 개인정보 보호</li>
+        <li class="en hidden">Local storage - protects personal info without external server</li>
+        <li class="ko">실시간 오버레이 - 게임 화면에 아이템 표시</li>
+        <li class="en hidden">Real-time overlay - displays items on game screen</li>
+        <li class="ko">아이템 통계 - 일별/주별 캡처 현황</li>
+        <li class="en hidden">Item statistics - daily/weekly capture stats</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    let isKorean = true;
+    
+    function toggleLang() {
+      isKorean = !isKorean;
+      
+      document.querySelectorAll('.ko').forEach(el => {
+        el.classList.toggle('hidden', !isKorean);
+      });
+      document.querySelectorAll('.en').forEach(el => {
+        el.classList.toggle('hidden', isKorean);
+      });
+    }
+  </script>
+</body>
+</html>
