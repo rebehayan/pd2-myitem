@@ -16,7 +16,7 @@ interface ReleaseManifest {
     icons: boolean
     filter: boolean
   }
-  changes: string[]
+  changes: string[] | { ko?: string[]; en?: string[] }
 }
 
 export interface AppUpdateSummary {
@@ -29,6 +29,8 @@ export interface AppUpdateSummary {
   date?: string
   notes?: string
   changes?: string[]
+  changesEn?: string[]
+  changesKo?: string[]
   downloadExe?: string
   downloadInstaller?: string
   error?: string
@@ -85,6 +87,8 @@ export async function checkForAppUpdate(): Promise<AppUpdateSummary> {
     const hasDataUpdate = manifest.dataUpdate ?? false
     const available = hasAppUpdate || hasDataUpdate
 
+    const changesObj = manifest.changes as { ko?: string[]; en?: string[] } | undefined
+
     return {
       supported: true,
       available,
@@ -94,7 +98,9 @@ export async function checkForAppUpdate(): Promise<AppUpdateSummary> {
       nextVersion: manifest.version,
       date: manifest.date,
       notes: manifest.body,
-      changes: manifest.changes,
+      changes: changesObj?.ko ?? changesObj?.en ?? [],
+      changesKo: changesObj?.ko ?? [],
+      changesEn: changesObj?.en ?? [],
       downloadExe: manifest.downloadExe,
       downloadInstaller: manifest.downloadInstaller,
     }

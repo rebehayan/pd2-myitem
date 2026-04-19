@@ -674,16 +674,21 @@ export function SettingsPage() {
             {updateStatus.dataUpdate && (
               <p className="d2-text--gold">● {text.updateAvailableData}</p>
             )}
-            {updateStatus.changes && updateStatus.changes.length > 0 && (
-              <div>
-                <strong>{text.updateChanges}:</strong>
-                <ul>
-                  {updateStatus.changes.map((change, index) => (
-                    <li key={index}>{change}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {(() => {
+              const changes = language === 'ko' ? updateStatus.changesKo : updateStatus.changesEn
+              const displayChanges = changes?.length ? changes : updateStatus.changes
+              if (!displayChanges?.length) return null
+              return (
+                <div>
+                  <strong>{text.updateChanges}:</strong>
+                  <ul>
+                    {displayChanges.map((change, index) => (
+                      <li key={index}>{change}</li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })()}
           </div>
         ) : null}
         <div className="dashboard-list__actions">
