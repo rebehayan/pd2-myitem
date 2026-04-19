@@ -8,7 +8,6 @@ import {
   readLocalItems,
   readLocalSettings,
   readLocalSettingsRaw,
-  toItemSummary as toLocalItemSummary,
   writeLocalItems,
   writeLocalSettings,
 } from './local-store'
@@ -280,7 +279,7 @@ function toItemSummary(item: ApiItemSummary): ItemSummary {
 
 export async function fetchRecentItems(): Promise<ItemSummary[]> {
   if (await shouldUseLocal()) {
-    const items = readLocalItems()
+    const items = await readLocalItems()
     return sortByCapturedAtDesc(getLocalItemSummaries(items))
   }
   const res = await authFetch(`${API_BASE}/api/items/recent`)
@@ -292,7 +291,7 @@ export async function fetchTodayItems(): Promise<ItemSummary[]> {
   if (await shouldUseLocal()) {
     const dayStart = new Date()
     dayStart.setHours(0, 0, 0, 0)
-    const items = readLocalItems().filter((item) => new Date(item.capturedAt).getTime() >= dayStart.getTime())
+    const items = (await readLocalItems()).filter((item) => new Date(item.capturedAt).getTime() >= dayStart.getTime())
     return sortByCapturedAtDesc(getLocalItemSummaries(items))
   }
   const res = await authFetch(`${API_BASE}/api/items/today`)
@@ -302,7 +301,7 @@ export async function fetchTodayItems(): Promise<ItemSummary[]> {
 
 export async function fetchItemsByDate(date: string): Promise<ItemSummary[]> {
   if (await shouldUseLocal()) {
-    const items = readLocalItems().filter((item) => formatLocalDate(item.capturedAt) === date)
+    const items = (await readLocalItems()).filter((item) => formatLocalDate(item.capturedAt) === date)
     return sortByCapturedAtDesc(getLocalItemSummaries(items))
   }
   const query = `?date=${encodeURIComponent(date)}`
@@ -314,7 +313,7 @@ export async function fetchItemsByDate(date: string): Promise<ItemSummary[]> {
 export async function fetchCalendarMonth(month: string): Promise<CalendarDayCount[]> {
   if (await shouldUseLocal()) {
     const counts = new Map<string, number>()
-    for (const item of readLocalItems()) {
+    for (const item of await readLocalItems()) {
       const dateKey = formatLocalDate(item.capturedAt)
       if (dateKey.startsWith(`${month}-`)) {
         counts.set(dateKey, (counts.get(dateKey) ?? 0) + 1)
@@ -399,17 +398,16 @@ export async function fetchOverlayItems(): Promise<{
   items: ItemSummary[]
 }> {
   if (await shouldUseLocal()) {
-    const settings = readLocalSettings(defaultAppSettings)
+    const settings = await readLocalSettings(defaultAppSettings)
     const limit = settings.overlay_item_limit ?? defaultAppSettings.overlay_item_limit
     const fetchCount = Math.max(limit * 5, 20)
-    const items = sortByCapturedAtDesc(readLocalItems())
+    const items = sortByCapturedAtDesc(await getLocalItemSummaries(await readLocalItems()))
       .slice(0, fetchCount)
       .map((item) => {
-        const summary = toLocalItemSummary(item)
-        const derivedKeyStats = item.stats ? item.stats.slice(0, 3).map(formatKeyStat) : []
+        const derivedKeyStats = item.keyStats && item.keyStats.length > 0 ? [] : []
         return {
-          ...summary,
-          keyStats: summary.keyStats && summary.keyStats.length > 0 ? summary.keyStats : derivedKeyStats,
+          ...item,
+          keyStats: item.keyStats && item.keyStats.length > 0 ? item.keyStats : derivedKeyStats,
         }
       })
 
@@ -482,7 +480,7 @@ interface ApiTodayStats {
 
 export async function fetchTodayStats(): Promise<TodayStats> {
   if (await shouldUseLocal()) {
-    return getLocalTodayStats(readLocalItems())
+    return getLocalTodayStats(await readLocalItems())
   }
   const res = await authFetch(`${API_BASE}/api/stats/today`)
   const stats = await parseJson<ApiTodayStats>(res)
@@ -496,7 +494,7 @@ export async function fetchTodayStats(): Promise<TodayStats> {
 
 export async function fetchItemDetail(id: string): Promise<ItemDetail> {
   if (await shouldUseLocal()) {
-    const items = readLocalItems()
+    const items = await readLocalItems()
     const match = items.find((item) => item.id === id)
     if (!match) {
       throw new ApiError(404, 'Item not found')
@@ -518,12 +516,12 @@ export async function fetchItemDetail(id: string): Promise<ItemDetail> {
 
 export async function deleteItem(id: string): Promise<void> {
   if (await shouldUseLocal()) {
-    const items = readLocalItems()
+    const items = await readLocalItems()
     const next = items.filter((item) => item.id !== id)
     if (next.length === items.length) {
       throw new ApiError(404, 'Item not found')
     }
-    writeLocalItems(next)
+    await writeLocalItems(next)
     await mirrorOverlayDeleteItemToLocalApi(id)
     await mirrorOverlayItemsSnapshotToLocalApi(next)
     return
@@ -537,8 +535,8 @@ export async function deleteItem(id: string): Promise<void> {
 
 export async function clearItems(): Promise<number> {
   if (await shouldUseLocal()) {
-    const items = readLocalItems()
-    clearLocalItems()
+    const items = await readLocalItems()
+    await clearLocalItems()
     await mirrorOverlayItemsClearToLocalApi()
     await mirrorOverlayItemsSnapshotToLocalApi([])
     return items.length
@@ -561,9 +559,9 @@ export async function fetchSettings(): Promise<AppSettings> {
 
 export async function updateSettings(payload: Partial<AppSettings>): Promise<AppSettings> {
   if (await shouldUseLocal()) {
-    const current = readLocalSettings(defaultAppSettings)
+    const current = await readLocalSettings(defaultAppSettings)
     const next = { ...current, ...payload }
-    writeLocalSettings(next)
+    await writeLocalSettings(next)
     await mirrorOverlaySettingsToLocalApi(next)
     return next
   }
@@ -578,8 +576,8 @@ export async function updateSettings(payload: Partial<AppSettings>): Promise<App
 }
 
 export async function syncLocalDataToServer(): Promise<{ importedItems: number; importedSettings: boolean }> {
-  const items = readLocalItems()
-  const settings = readLocalSettingsRaw()
+  const items = await readLocalItems()
+  const settings = await readLocalSettingsRaw()
   if (items.length === 0 && !settings) {
     return { importedItems: 0, importedSettings: false }
   }
@@ -592,10 +590,10 @@ export async function syncLocalDataToServer(): Promise<{ importedItems: number; 
   })
   const payload = await parseJson<{ imported_items: number; imported_settings: boolean }>(res)
   if (payload.imported_items > 0) {
-    clearLocalItems()
+    await clearLocalItems()
   }
   if (payload.imported_settings) {
-    clearLocalSettings()
+    await clearLocalSettings()
   }
   return { importedItems: payload.imported_items, importedSettings: payload.imported_settings }
 }

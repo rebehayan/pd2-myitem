@@ -372,7 +372,7 @@ export function startTauriClipboardCapture(): () => void {
 
       const fingerprintTag = detail.analysisTags?.find((tag) => tag.startsWith('fingerprint:'))
       const fingerprint = fingerprintTag ? fingerprintTag.replace('fingerprint:', '') : ''
-      const items = readLocalItems()
+      const items = await readLocalItems()
       if (fingerprint && isDuplicate(items, fingerprint, Date.now())) {
         lastPayload = rawText
         setCaptureStatus('duplicate_ignored')
@@ -380,9 +380,9 @@ export function startTauriClipboardCapture(): () => void {
       }
 
       const next = [withFingerprint(detail, fingerprint), ...items].slice(0, maxLocalItems)
-      writeLocalItems(next)
+      await writeLocalItems(next)
       await mirrorOverlayItemsSnapshot(next)
-      markLocalSyncPending()
+      await markLocalSyncPending()
       lastPayload = rawText
       clearCaptureError()
       setCaptureStatus('captured')
