@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth-context'
-import { markLocalSyncPending } from '../lib/local-store'
 import { supabase, supabaseConfigured } from '../lib/supabase'
 import { useUiLanguage } from '../lib/ui-language-context'
 
@@ -85,32 +84,6 @@ export function LoginPage() {
       setError(authError.message)
     } else {
       setMessage(text.signInSuccess)
-    }
-    setLoading(false)
-  }
-
-  const onSignUp = async () => {
-    if (loading) {
-      return
-    }
-    if (!supabase) {
-      setError(text.missingSupabase)
-      return
-    }
-    setLoading(true)
-    setError(null)
-    setMessage(null)
-
-    const { error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-
-    if (authError) {
-      setError(authError.message)
-    } else {
-      markLocalSyncPending()
-      setMessage(text.signupSuccess)
     }
     setLoading(false)
   }
