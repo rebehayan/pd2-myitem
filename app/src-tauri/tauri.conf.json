@@ -27,7 +27,8 @@
     "active": true,
     "targets": ["nsis"],
     "icon": ["../public/diablo.ico"],
-    "resources": ["../public/icons"]
+    "resources": ["../public/icons"],
+    "publisher": "Rebehayan"
   },
   "plugins": {
     "updater": {
