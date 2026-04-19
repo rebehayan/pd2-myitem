@@ -1,0 +1,23 @@
+{
+  "version": "0.1.2",
+  "currentVersion": "0.1.2",
+  "appUpdate": false,
+  "dataUpdate": false,
+  "releaseUrl": "https://github.com/rebehayan/pd2-myitem/releases/latest",
+  "downloadExe": "https://github.com/rebehayan/pd2-myitem/releases/latest/download/PD2_Broadcast_Item_Tracker_0.1.2_portable.exe",
+  "downloadInstaller": "https://github.com/rebehayan/pd2-myitem/releases/latest/download/PD2%20Broadcast%20Item%20Tracker_0.1.2_x64-setup.exe",
+  "date": "2026-04-19",
+  "body": "## 업데이트 내용\n\n### 시스템 업데이트\n- GitHub Releases를 통한 업데이트 시스템 추가\n- 설정 페이지에서 업데이트 확인/다운로드 가능\n- 변경 사항 표시 기능 추가\n\n### 데이터 업데이트\n- diablo.ico 앱 아이콘 변경\n\n### 사용법\n1. portable exe: 파일을 다운로드하여 실행\n2. 설치 프로그램: 파일을 다운로드하여 설치",
+  "data": {
+    "icons": true,
+    "filter": false
+  },
+  "changes": [
+    "GitHub Releases 업데이트 시스템",
+    "설정 페이지 통합 업데이트 UI",
+    "변경 사항 표시",
+    "중복 캡처 수정 (3초→5초)",
+    "diablo 아이콘 적용",
+    "게시자: Rebehayan"
+  ]
+}

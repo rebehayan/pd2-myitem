@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchSettings, fetchSyncStatus, triggerSyncPush, updateSettings } from '../lib/api'
-import { checkForAppUpdate, downloadAndInstallUpdate, type AppUpdateSummary } from '../lib/app-updater'
+import { checkForAppUpdate, openDownloadPage, type AppUpdateSummary } from '../lib/app-updater'
 import type { AppSettings, SyncStatus } from '../lib/types'
 import { defaultAppSettings } from '../lib/settings-defaults'
 import { useUiLanguage } from '../lib/ui-language-context'
@@ -102,18 +102,21 @@ export function SettingsPage() {
           syncRunDone: '동기화 실행 완료',
           syncUnavailable: '동기화 상태를 불러오지 못했습니다.',
           syncNone: '없음',
-          updateTitle: '앱 업데이트',
+          updateTitle: '앱 / 데이터 업데이트',
           updateCheck: '업데이트 확인',
-          updateInstall: '업데이트 다운로드/설치',
+          updateInstall: '다운로드 페이지 열기',
           updateNoSupport: '데스크톱 앱에서만 업데이트를 지원합니다.',
           updateChecking: '업데이트를 확인하는 중입니다...',
           updateLatest: '최신 버전입니다.',
           updateAvailable: '새 버전이 있습니다.',
+          updateAvailableApp: '시스템 업데이트 가능',
+          updateAvailableData: '데이터 업데이트 가능',
           updateInstalled: '업데이트 설치가 완료되었습니다. 앱을 재시작하면 적용됩니다.',
           updateCheckFail: '업데이트 확인에 실패했습니다.',
           updateInstallFail: '업데이트 설치에 실패했습니다.',
           updateCurrent: '현재 버전',
           updateNext: '업데이트 버전',
+          updateChanges: '변경 사항',
           captureTitle: '클립보드 캡처 상태',
           captureStatus: '상태',
           captureSource: '소스',
@@ -153,18 +156,21 @@ export function SettingsPage() {
           syncRunDone: 'Sync push finished',
           syncUnavailable: 'Failed to load sync status.',
           syncNone: 'None',
-          updateTitle: 'App Update',
+          updateTitle: 'App / Data Update',
           updateCheck: 'Check for updates',
-          updateInstall: 'Download and install update',
+          updateInstall: 'Open download page',
           updateNoSupport: 'Updates are available only in desktop app runtime.',
           updateChecking: 'Checking for updates...',
           updateLatest: 'You are on the latest version.',
           updateAvailable: 'A new version is available.',
+          updateAvailableApp: 'App update available',
+          updateAvailableData: 'Data update available',
           updateInstalled: 'Update installed. Restart app to apply changes.',
           updateCheckFail: 'Failed to check for updates.',
           updateInstallFail: 'Failed to install update.',
           updateCurrent: 'Current Version',
           updateNext: 'Update Version',
+          updateChanges: 'Changes',
           captureTitle: 'Clipboard Capture Status',
           captureStatus: 'Status',
           captureSource: 'Source',
@@ -380,16 +386,16 @@ export function SettingsPage() {
   const runInstallUpdate = async () => {
     setUpdateBusy(true)
     try {
-      const result = await downloadAndInstallUpdate()
-      setUpdateStatus(result)
-      if (!result.supported) {
-        setUpdateMessage(text.updateNoSupport)
-      } else if (result.error) {
-        setUpdateMessage(`${text.updateInstallFail} (${result.error})`)
-      } else if (!result.available) {
+      if (!updateStatus?.available) {
         setUpdateMessage(text.updateLatest)
+        setUpdateBusy(false)
+        return
+      }
+      const result = await openDownloadPage()
+      if (result.success) {
+        setUpdateMessage('다운로드 페이지를 열었습니다. 해당 페이지에서 파일을 다운로드하세요.')
       } else {
-        setUpdateMessage(text.updateInstalled)
+        setUpdateMessage(`${text.updateInstallFail} (${result.error})`)
       }
     } catch {
       setUpdateMessage(text.updateInstallFail)
@@ -659,9 +665,25 @@ export function SettingsPage() {
       <section className="d2-panel" aria-label="App update panel">
         <h3>{text.updateTitle}</h3>
         {updateStatus ? (
-          <div className="settings-grid settings-grid--title">
-            <p>{text.updateCurrent}: {updateStatus.currentVersion ?? text.syncNone}</p>
-            <p>{text.updateNext}: {updateStatus.nextVersion ?? text.syncNone}</p>
+          <div className="settings-grid settings-grid--full">
+            <p><strong>{text.updateCurrent}:</strong> {updateStatus.currentVersion ?? text.syncNone}</p>
+            <p><strong>{text.updateNext}:</strong> {updateStatus.nextVersion ?? text.syncNone}</p>
+            {updateStatus.appUpdate && (
+              <p className="d2-text--green">● {text.updateAvailableApp}</p>
+            )}
+            {updateStatus.dataUpdate && (
+              <p className="d2-text--gold">● {text.updateAvailableData}</p>
+            )}
+            {updateStatus.changes && updateStatus.changes.length > 0 && (
+              <div>
+                <strong>{text.updateChanges}:</strong>
+                <ul>
+                  {updateStatus.changes.map((change, index) => (
+                    <li key={index}>{change}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         ) : null}
         <div className="dashboard-list__actions">
@@ -677,7 +699,7 @@ export function SettingsPage() {
             type="button"
             className="d2-button d2-button--primary d2-button--sm"
             onClick={runInstallUpdate}
-            disabled={updateBusy}
+            disabled={updateBusy || !updateStatus?.available}
           >
             {text.updateInstall}
           </button>
