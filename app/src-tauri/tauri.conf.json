@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "PD2 Broadcast Item Tracker",
-  "version": "0.1.1",
-  "identifier": "com.pd2.broadcastitemtracker",
+  "version": "0.1.2",
+  "identifier": "com.rebehayan.pd2itemtracker",
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
