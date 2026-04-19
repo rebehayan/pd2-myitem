@@ -13,6 +13,7 @@ export interface AppUpdateSummary {
   nextVersion?: string
   date?: string
   notes?: string
+  error?: string
 }
 
 function isTauriRuntime(): boolean {
@@ -38,28 +39,40 @@ async function checkRawUpdate(): Promise<UpdateLike | null> {
   if (!isTauriRuntime()) {
     return null
   }
-  const updater = await import('@tauri-apps/plugin-updater')
-  const update = await updater.check()
-  return toUpdateLike(update)
+  try {
+    const updater = await import('@tauri-apps/plugin-updater')
+    const update = await updater.check()
+    return toUpdateLike(update)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`updater check failed: ${message}`)
+  }
 }
 
 export async function checkForAppUpdate(): Promise<AppUpdateSummary> {
   if (!isTauriRuntime()) {
     return { supported: false, available: false }
   }
+  try {
+    const update = await checkRawUpdate()
+    if (!update) {
+      return { supported: true, available: false }
+    }
 
-  const update = await checkRawUpdate()
-  if (!update) {
-    return { supported: true, available: false }
-  }
-
-  return {
-    supported: true,
-    available: true,
-    currentVersion: update.currentVersion,
-    nextVersion: update.version,
-    date: update.date,
-    notes: update.body,
+    return {
+      supported: true,
+      available: true,
+      currentVersion: update.currentVersion,
+      nextVersion: update.version,
+      date: update.date,
+      notes: update.body,
+    }
+  } catch (error) {
+    return {
+      supported: true,
+      available: false,
+      error: error instanceof Error ? error.message : String(error),
+    }
   }
 }
 
@@ -68,18 +81,26 @@ export async function downloadAndInstallUpdate(): Promise<AppUpdateSummary> {
     return { supported: false, available: false }
   }
 
-  const update = await checkRawUpdate()
-  if (!update) {
-    return { supported: true, available: false }
-  }
+  try {
+    const update = await checkRawUpdate()
+    if (!update) {
+      return { supported: true, available: false }
+    }
 
-  await update.downloadAndInstall()
-  return {
-    supported: true,
-    available: true,
-    currentVersion: update.currentVersion,
-    nextVersion: update.version,
-    date: update.date,
-    notes: update.body,
+    await update.downloadAndInstall()
+    return {
+      supported: true,
+      available: true,
+      currentVersion: update.currentVersion,
+      nextVersion: update.version,
+      date: update.date,
+      notes: update.body,
+    }
+  } catch (error) {
+    return {
+      supported: true,
+      available: false,
+      error: error instanceof Error ? error.message : String(error),
+    }
   }
 }

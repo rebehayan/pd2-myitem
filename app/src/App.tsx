@@ -109,9 +109,6 @@ function App() {
           ) : (
             <>
               <span>{text.guest}</span>
-              <NavLink to="/login" className="button-secondary">
-                {text.signIn}
-              </NavLink>
               <button type="button" className="button-secondary" onClick={toggleLanguage}>
                 {text.languageButton}
               </button>
@@ -148,7 +145,7 @@ function App() {
           <Route path="/kit" element={<D2KitPage />} />
           <Route path="/item/:id" element={<ItemDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/login" element={<LoginPage />} />
+          
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

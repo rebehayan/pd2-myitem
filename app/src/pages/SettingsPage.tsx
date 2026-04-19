@@ -241,6 +241,8 @@ export function SettingsPage() {
         setUpdateStatus(result)
         if (!result.supported) {
           setUpdateMessage(text.updateNoSupport)
+        } else if (result.error) {
+          setUpdateMessage(`${text.updateCheckFail} (${result.error})`)
         } else if (result.available) {
           setUpdateMessage(text.updateAvailable)
         } else {
@@ -361,6 +363,8 @@ export function SettingsPage() {
       setUpdateStatus(result)
       if (!result.supported) {
         setUpdateMessage(text.updateNoSupport)
+      } else if (result.error) {
+        setUpdateMessage(`${text.updateCheckFail} (${result.error})`)
       } else if (result.available) {
         setUpdateMessage(text.updateAvailable)
       } else {
@@ -380,6 +384,8 @@ export function SettingsPage() {
       setUpdateStatus(result)
       if (!result.supported) {
         setUpdateMessage(text.updateNoSupport)
+      } else if (result.error) {
+        setUpdateMessage(`${text.updateInstallFail} (${result.error})`)
       } else if (!result.available) {
         setUpdateMessage(text.updateLatest)
       } else {

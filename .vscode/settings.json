@@ -1,5 +1,8 @@
 {
+  "terminal.integrated.cwd": "${workspaceFolder}",
   "terminal.integrated.shellIntegration.enabled": false,
+  "terminal.integrated.gpuAcceleration": "off",
+  "terminal.integrated.renderType": "dom",
   "terminal.integrated.env.windows": {
     "TERM": "xterm-256color",
     "COLORTERM": "truecolor"

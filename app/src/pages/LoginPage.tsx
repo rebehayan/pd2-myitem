@@ -208,9 +208,6 @@ export function LoginPage() {
             <button type="submit" className="button-primary" disabled={loading || !supabaseConfigured}>
               {loading ? text.signingIn : text.signIn}
             </button>
-            <button type="button" className="button-secondary" onClick={onSignUp} disabled={loading || !supabaseConfigured}>
-              {text.create}
-            </button>
             <button
               type="button"
               className="button-secondary"
